@@ -22,49 +22,26 @@ MonoBehaviour:
   Gravity: -15
   AirControlRate: 2
   JumpTimeout: 0.1
-  FallTimeout: 0.15
   TerminalVelocity: 53
   AirDragRate: 0.5
   GroundedOffset: -0.14
   GroundedRadius: 0.35
-  GroundStickVelocity: -2
-  SurfaceDetectionMask:
-    serializedVersion: 2
-    m_Bits: 0
   GroundLayers:
     serializedVersion: 2
     m_Bits: 8
-  ClimbableLayers:
-    serializedVersion: 2
-    m_Bits: 384
-  SurfaceClassification:
-    WalkableSlopeMax: 40
-    SteepSlopeMax: 65
-    ClimbEnterAngle: 50
-    ClimbExitAngle: 45
-    DefaultMaxStandAngle: 45
-    DefaultGripMultiplier: 1
-    DefaultSlipMultiplier: 1
-    DefaultFriction: 1
-    MaxGripAnchorDistance: 3
-    GripSurfaceProbeRadius: 0.15
-    LineOfSightSkinWidth: 0.05
-    GripAnchorPointTolerance: 0.35
-    GripAnchorNormalDotThreshold: 0.85
-    GripPhysicsValidationIntervalFrames: 3
+  GroundStickVelocity: -2
   AirGraceDuration: 0.15
   AirGraceUpwardVelocity: 0.1
   GripReachDistance: 2.5
-  WallSensorCheckDistance: 0.6
-  GripProbeRadius: 0.4
-  GripEnterHoldTime: 0.1
-  GripExitLoseTime: 0.15
+  ClimbableLayers:
+    serializedVersion: 2
+    m_Bits: 128
   RestOffset: 1.4
-  OneHandDrop: 0.5
   PullOffset: 0.4
   BaseWallDistance: 0.6
   LeanWallDistance: 1.8
   PullWallDistanceMultiplier: 0.8
+  SwingAmplitude: 1.5
   MuscleSpeed: 6
   SpringStiffness: 150
   ClimbInputThreshold: 0.1

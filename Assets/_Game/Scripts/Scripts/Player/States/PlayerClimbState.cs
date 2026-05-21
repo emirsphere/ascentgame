@@ -2,75 +2,102 @@ using UnityEngine;
 
 public class PlayerClimbState : PlayerBaseState
 {
-    private Vector3 _activeWallNormal = Vector3.zero;
+    private float _currentOffset;
+    private float _currentWallDist;
+    private Vector3 _currentVelocity;
+    private float _springDamping;
 
-    public PlayerClimbState(IPlayerController currentContext, PlayerStateFactory playerStateFactory)
-        : base(currentContext, playerStateFactory) { }
+    public PlayerClimbState(IPlayerController currentContext, PlayerStateFactory playerStateFactory) : base(currentContext, playerStateFactory) { }
 
     public override void EnterState()
     {
-        _ctx.SetVelocity(Vector3.zero);
-        Debug.Log("[PlayerClimbState] Climb state entered.");
+        _ctx.IsFreeLook = true;
+        _currentVelocity = _ctx.Velocity;
+        _currentOffset = _ctx.Stats.RestOffset;
+        _currentWallDist = _ctx.Stats.BaseWallDistance;
+        _springDamping = 2f * Mathf.Sqrt(_ctx.Stats.SpringStiffness);
     }
 
     public override void UpdateState()
     {
+        HandleGripLogic();
         CheckSwitchStates();
-
-        if (!IsGrabbing())
-            return;
-
-        UpdateActiveWallNormal();
-        _ctx.SetVelocity(Vector3.zero);
-        _ctx.SetClimbSolverInput(_ctx.ClimbInput);
+        HandleTwoHandedPhysics();
     }
 
-    public override void ExitState()
-    {
-        Debug.Log("[PlayerClimbState] Climb state exited.");
-    }
+    public override void ExitState() { }
 
     public override void CheckSwitchStates()
     {
-        if (!IsGrabbing())
+        if (_ctx.LeftAnchor == null && _ctx.RightAnchor == null)
         {
+            _ctx.ResetFreeLook();
             _ctx.SwitchState(_factory.Air);
-            return;
         }
-
-        if (_ctx.ClimbInput.jumpOff)
+        else if (_ctx.LeftAnchor == null || _ctx.RightAnchor == null)
         {
-            PlayerStats stats = _ctx.Stats;
+            _ctx.SwitchState(_factory.Hang); // Bir eli bıraktı, sarkmaya dön
+        }
+        else if (_ctx.JumpInput)
+        {
+            // Duvardan geriye zıplama
+            _ctx.ResetFreeLook();
             _ctx.ResetJump();
-            _ctx.ClearGripAnchors();
+            Vector3 averageNormal = (_ctx.LeftNormal + _ctx.RightNormal).normalized;
+            Vector3 jumpDir = (averageNormal * _ctx.Stats.ClimbJumpNormalScale + Vector3.up * _ctx.Stats.ClimbJumpUpScale).normalized;
 
-            Vector3 jumpDir = (_activeWallNormal * stats.ClimbJumpNormalScale + Vector3.up * stats.ClimbJumpUpScale).normalized;
-            _ctx.SetVelocity(jumpDir * stats.ClimbJumpImpulse);
+            _ctx.SetLeftAnchor(null, Vector3.zero);
+            _ctx.SetRightAnchor(null, Vector3.zero);
+
+            _ctx.SetVelocity(_currentVelocity * _ctx.Stats.ClimbJumpVelocityRetain + jumpDir * _ctx.Stats.ClimbJumpImpulse);
             _ctx.SwitchState(_factory.Air);
         }
     }
 
-    private void UpdateActiveWallNormal()
+    private void HandleGripLogic()
     {
-        Vector3 normalSum = Vector3.zero;
-        int activeCount = 0;
-
-        if (_ctx.LeftHandAnchor.isActive)
-        {
-            normalSum += _ctx.LeftHandAnchor.normal;
-            activeCount++;
-        }
-
-        if (_ctx.RightHandAnchor.isActive)
-        {
-            normalSum += _ctx.RightHandAnchor.normal;
-            activeCount++;
-        }
-
-        _activeWallNormal = activeCount > 0 && normalSum.sqrMagnitude > 0.001f
-            ? (normalSum / activeCount).normalized
-            : Vector3.up;
+        // Eli bıraktı mı kontrolü. Yeni tutunma burada olmaz, çünkü iki el zaten dolu.
+        if (!_ctx.LeftGripInput) _ctx.SetLeftAnchor(null, Vector3.zero);
+        if (!_ctx.RightGripInput) _ctx.SetRightAnchor(null, Vector3.zero);
     }
 
-    private bool IsGrabbing() => _ctx.HasActiveHandAnchor;
+    private void HandleTwoHandedPhysics()
+    {
+        if (_ctx.LeftAnchor == null || _ctx.RightAnchor == null) return;
+
+        PlayerStats stats = _ctx.Stats;
+        Vector3 averagePivot = (_ctx.LeftAnchor.Value + _ctx.RightAnchor.Value) * 0.5f;
+        Vector3 averageNormal = (_ctx.LeftNormal + _ctx.RightNormal).normalized;
+
+        float verticalInput = _ctx.MoveInput.y;
+        float targetOffset = stats.RestOffset;
+        float targetWallDist = stats.BaseWallDistance;
+
+        // W ve S ile kasları gerip kendini çekme / itme
+        if (verticalInput > stats.ClimbInputThreshold)
+        {
+            targetOffset = stats.PullOffset;
+            targetWallDist = stats.BaseWallDistance * stats.PullWallDistanceMultiplier;
+        }
+        else if (verticalInput < -stats.ClimbInputThreshold)
+        {
+            targetWallDist = stats.LeanWallDistance;
+        }
+
+        _currentOffset = Mathf.Lerp(_currentOffset, targetOffset, Time.deltaTime * stats.MuscleSpeed);
+        _currentWallDist = Mathf.Lerp(_currentWallDist, targetWallDist, Time.deltaTime * stats.MuscleSpeed);
+
+        Vector3 desiredPosition = averagePivot + (Vector3.down * _currentOffset) + (averageNormal * _currentWallDist);
+
+        Vector3 displacement = _ctx.PlayerTransform.position - desiredPosition;
+        Vector3 springForce = -stats.SpringStiffness * displacement;
+        Vector3 dampingForce = -_springDamping * _currentVelocity;
+
+        _currentVelocity += (springForce + dampingForce) * Time.deltaTime;
+
+        if (_currentVelocity.sqrMagnitude < stats.ClimbSnapThreshold && displacement.sqrMagnitude < stats.ClimbSnapThreshold)
+            _currentVelocity = Vector3.zero;
+
+        _ctx.SetVelocity(_currentVelocity);
+    }
 }

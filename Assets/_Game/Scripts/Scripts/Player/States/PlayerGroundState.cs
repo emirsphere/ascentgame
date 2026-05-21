@@ -4,8 +4,7 @@ public class PlayerGroundedState : PlayerBaseState
 {
     private float _jumpTimeoutDelta;
 
-    public PlayerGroundedState(IPlayerController currentContext, PlayerStateFactory playerStateFactory)
-        : base(currentContext, playerStateFactory) { }
+    public PlayerGroundedState(IPlayerController currentContext, PlayerStateFactory playerStateFactory) : base(currentContext, playerStateFactory) { }
 
     public override void EnterState()
     {
@@ -18,44 +17,35 @@ public class PlayerGroundedState : PlayerBaseState
     public override void UpdateState()
     {
         if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
-
-        if ((_ctx.LeftGripInput || _ctx.RightGripInput) && _ctx.CanGrip)
-        {
-            _ctx.SwitchState(_factory.Climb);
-            return;
-        }
-
         HandleMovement();
         CheckSwitchStates();
     }
 
-    public override void ExitState()
-    {
-        _ctx.ResetJump();
-    }
+    public override void ExitState() => _ctx.ResetJump();
 
     public override void CheckSwitchStates()
     {
-        if (_ctx.JumpInput)
+        // Tutunma Kontrolü
+        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null && _ctx.Sensor.CanGrip)
+            _ctx.SetLeftAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+
+        if (_ctx.RightGripInput && _ctx.RightAnchor == null && _ctx.Sensor.CanGrip)
+            _ctx.SetRightAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+
+        if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Climb); return; }
+        else if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Hang); return; }
+
+        if (_ctx.JumpInput && _jumpTimeoutDelta <= 0.0f && _ctx.Sensor.IsGrounded)
         {
-            if (_jumpTimeoutDelta <= 0.0f && _ctx.IsGrounded)
-            {
-                float jumpVelocity = Mathf.Sqrt(_ctx.Stats.JumpHeight * -2f * _ctx.Stats.Gravity);
-
-                Vector3 vel = _ctx.Velocity;
-                vel.y = jumpVelocity;
-                _ctx.SetVelocity(vel);
-
-                _ctx.SwitchState(_factory.Air);
-                _ctx.ResetJump();
-                return;
-            }
-        }
-
-        if (!_ctx.IsGrounded)
-        {
+            float jumpVelocity = Mathf.Sqrt(_ctx.Stats.JumpHeight * -2f * _ctx.Stats.Gravity);
+            Vector3 vel = _ctx.Velocity; vel.y = jumpVelocity;
+            _ctx.SetVelocity(vel);
             _ctx.SwitchState(_factory.Air);
+            _ctx.ResetJump();
+            return;
         }
+
+        if (!_ctx.Sensor.IsGrounded) _ctx.SwitchState(_factory.Air);
     }
 
     private void HandleMovement()
@@ -65,43 +55,22 @@ public class PlayerGroundedState : PlayerBaseState
         if (_ctx.MoveInput == Vector2.zero) targetSpeed = 0.0f;
 
         float currentHorizontalSpeed = _ctx.HorizontalSpeed;
-        float speedOffset = stats.SpeedBlendThreshold;
-        float finalSpeed;
+        float finalSpeed = targetSpeed;
 
-        float currentRate = (_ctx.MoveInput == Vector2.zero) ? stats.DecelerationRate : stats.AccelerationRate;
+        if (Mathf.Abs(currentHorizontalSpeed - targetSpeed) > stats.SpeedBlendThreshold)
+        {
+            float rate = (_ctx.MoveInput == Vector2.zero) ? stats.DecelerationRate : stats.AccelerationRate;
+            finalSpeed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed, Time.deltaTime * rate);
+        }
 
-        if (Mathf.Abs(currentHorizontalSpeed - targetSpeed) > speedOffset)
-        {
-            finalSpeed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed, Time.deltaTime * currentRate);
-            finalSpeed = Mathf.Round(finalSpeed * 1000f) / 1000f;
-        }
-        else
-        {
-            finalSpeed = targetSpeed;
-        }
+        Vector3 inputDirection = _ctx.MoveInput != Vector2.zero
+            ? _ctx.PlayerTransform.right * _ctx.MoveInput.x + _ctx.PlayerTransform.forward * _ctx.MoveInput.y
+            : (_ctx.HorizontalSpeed > 0.001f ? new Vector3(_ctx.Velocity.x, 0, _ctx.Velocity.z).normalized : Vector3.zero);
 
         Vector3 vel = _ctx.Velocity;
-        Vector3 inputDirection;
-
-        if (_ctx.MoveInput != Vector2.zero)
-        {
-            Transform t = _ctx.PlayerTransform;
-            inputDirection = t.right * _ctx.MoveInput.x + t.forward * _ctx.MoveInput.y;
-        }
-        else if (currentHorizontalSpeed > 0.001f)
-        {
-            inputDirection = new Vector3(vel.x, 0f, vel.z);
-            inputDirection.Normalize();
-        }
-        else
-        {
-            inputDirection = Vector3.zero;
-        }
-
-        Vector3 horizontal = inputDirection * finalSpeed;
-        vel.x = horizontal.x;
+        vel.x = inputDirection.x * finalSpeed;
         vel.y = stats.GroundStickVelocity;
-        vel.z = horizontal.z;
+        vel.z = inputDirection.z * finalSpeed;
         _ctx.SetVelocity(vel);
     }
 }

@@ -2,64 +2,40 @@ using UnityEngine;
 
 public class PlayerAirState : PlayerBaseState
 {
-    private float _gracePeriodTimer;
+    public PlayerAirState(IPlayerController currentContext, PlayerStateFactory playerStateFactory) : base(currentContext, playerStateFactory) { }
 
-    public PlayerAirState(IPlayerController currentContext, PlayerStateFactory playerStateFactory)
-        : base(currentContext, playerStateFactory) { }
-
-    public override void EnterState()
-    {
-        _ctx.ResetJump();
-        _gracePeriodTimer = _ctx.Stats.AirGraceDuration;
-    }
+    public override void EnterState() => _ctx.ResetJump();
 
     public override void UpdateState()
     {
         if (_ctx.JumpInput) _ctx.ResetJump();
-
-        _gracePeriodTimer -= Time.deltaTime;
-
-        CheckSwitchStates();
-        if (_ctx.IsClimbing) return;
-
         HandleGravity();
         HandleAirMovement();
+        CheckSwitchStates();
     }
 
     public override void ExitState() { }
 
     public override void CheckSwitchStates()
     {
-        PlayerStats stats = _ctx.Stats;
+        // Tutunma Kontrolü (Havadayken duvara uçarken)
+        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null && _ctx.Sensor.CanGrip)
+            _ctx.SetLeftAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
 
-        if (_gracePeriodTimer > 0 && _ctx.Velocity.y > stats.AirGraceUpwardVelocity) return;
+        if (_ctx.RightGripInput && _ctx.RightAnchor == null && _ctx.Sensor.CanGrip)
+            _ctx.SetRightAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
 
-        bool gripPressed = _ctx.LeftGripInput || _ctx.RightGripInput;
+        if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Climb); return; }
+        else if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Hang); return; }
 
-        if (gripPressed && _ctx.CanGrip)
-        {
-            _ctx.SwitchState(_factory.Climb);
-            return;
-        }
-
-        if (_ctx.IsGrounded && _ctx.Velocity.y < 0.0f)
-        {
-            _ctx.SwitchState(_factory.Grounded);
-        }
+        if (_ctx.Sensor.IsGrounded && _ctx.Velocity.y < 0.0f) _ctx.SwitchState(_factory.Grounded);
     }
 
     private void HandleGravity()
     {
         PlayerStats stats = _ctx.Stats;
-        float verticalVel = _ctx.Velocity.y;
-
-        if (verticalVel > -stats.TerminalVelocity)
-        {
-            verticalVel += stats.Gravity * Time.deltaTime;
-        }
-
         Vector3 vel = _ctx.Velocity;
-        vel.y = verticalVel;
+        if (vel.y > -stats.TerminalVelocity) vel.y += stats.Gravity * Time.deltaTime;
         _ctx.SetVelocity(vel);
     }
 
@@ -67,31 +43,21 @@ public class PlayerAirState : PlayerBaseState
     {
         PlayerStats stats = _ctx.Stats;
         float targetSpeed = _ctx.MoveInput == Vector2.zero ? 0.0f : stats.MoveSpeed;
-        float currentHorizontalSpeed = _ctx.HorizontalSpeed;
-
-        float finalSpeed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed, Time.deltaTime * stats.AirControlRate);
-        finalSpeed = Mathf.Round(finalSpeed * 1000f) / 1000f;
+        float finalSpeed = Mathf.Lerp(_ctx.HorizontalSpeed, targetSpeed, Time.deltaTime * stats.AirControlRate);
 
         Vector3 vel = _ctx.Velocity;
-
         if (_ctx.MoveInput == Vector2.zero)
         {
-            float vy = vel.y;
             float drag = Time.deltaTime * stats.AirDragRate;
             vel.x = Mathf.Lerp(vel.x, 0f, drag);
             vel.z = Mathf.Lerp(vel.z, 0f, drag);
-            vel.y = vy;
             _ctx.SetVelocity(vel);
             return;
         }
 
-        Transform t = _ctx.PlayerTransform;
-        Vector3 inputDirection = t.right * _ctx.MoveInput.x + t.forward * _ctx.MoveInput.y;
-        inputDirection.Normalize();
-
-        Vector3 horizontal = inputDirection * finalSpeed;
-        vel.x = horizontal.x;
-        vel.z = horizontal.z;
+        Vector3 inputDir = (_ctx.PlayerTransform.right * _ctx.MoveInput.x + _ctx.PlayerTransform.forward * _ctx.MoveInput.y).normalized;
+        vel.x = inputDir.x * finalSpeed;
+        vel.z = inputDir.z * finalSpeed;
         _ctx.SetVelocity(vel);
     }
 }
