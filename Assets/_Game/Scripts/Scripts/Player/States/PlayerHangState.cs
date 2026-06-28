@@ -11,6 +11,7 @@ public class PlayerHangState : PlayerBaseState
     {
         _ctx.IsFreeLook = true;
         _currentVelocity = _ctx.Velocity;
+        // Kritik sönümleme katsayısı (Kusursuz yay fiziği formülü)
         _springDamping = 2f * Mathf.Sqrt(_ctx.Stats.SpringStiffness);
     }
 
@@ -19,7 +20,6 @@ public class PlayerHangState : PlayerBaseState
         HandleGripLogic();
         CheckSwitchStates();
 
-        // BUG FİX: Eğer CheckSwitchStates bizi Air state'ine attıysa, fiziği hesaplama. Çökmeyi engeller.
         if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null)
         {
             HandlePendulumPhysics();
@@ -55,7 +55,6 @@ public class PlayerHangState : PlayerBaseState
 
     private void HandlePendulumPhysics()
     {
-        // BUG FİX: GÜVENLİ OKUMA (Defensive Programming). Null gelirse işlemi iptal et.
         if (!_ctx.LeftAnchor.HasValue && !_ctx.RightAnchor.HasValue) return;
 
         Vector3 anchor = _ctx.LeftAnchor.HasValue ? _ctx.LeftAnchor.Value : _ctx.RightAnchor.Value;
@@ -63,6 +62,7 @@ public class PlayerHangState : PlayerBaseState
 
         Vector3 desiredPosition = anchor + (Vector3.down * _ctx.Stats.RestOffset) + (normal * _ctx.Stats.BaseWallDistance);
 
+        // A/D ile Momentum Kazanımı
         Vector3 swingRight = Vector3.Cross(Vector3.up, normal).normalized;
         desiredPosition += swingRight * _ctx.MoveInput.x * _ctx.Stats.SwingAmplitude;
 
@@ -72,8 +72,11 @@ public class PlayerHangState : PlayerBaseState
 
         _currentVelocity += (springForce + dampingForce) * Time.deltaTime;
 
-        if (_currentVelocity.sqrMagnitude < 0.05f && displacement.sqrMagnitude < 0.05f)
-            _currentVelocity = Vector3.zero;
+        // Fiziği daha yumuşak bitirmek için tolerans eşiği düşürüldü
+        if (_currentVelocity.sqrMagnitude < _ctx.Stats.ClimbSnapThreshold && displacement.sqrMagnitude < _ctx.Stats.ClimbSnapThreshold)
+        {
+            _currentVelocity = Vector3.Lerp(_currentVelocity, Vector3.zero, Time.deltaTime * 10f);
+        }
 
         _ctx.SetVelocity(_currentVelocity);
     }

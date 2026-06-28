@@ -36,11 +36,10 @@ public class PlayerClimbState : PlayerBaseState
         }
         else if (_ctx.LeftAnchor == null || _ctx.RightAnchor == null)
         {
-            _ctx.SwitchState(_factory.Hang); // Bir eli bıraktı, sarkmaya dön
+            _ctx.SwitchState(_factory.Hang);
         }
         else if (_ctx.JumpInput)
         {
-            // Duvardan geriye zıplama
             _ctx.ResetFreeLook();
             _ctx.ResetJump();
             Vector3 averageNormal = (_ctx.LeftNormal + _ctx.RightNormal).normalized;
@@ -56,7 +55,6 @@ public class PlayerClimbState : PlayerBaseState
 
     private void HandleGripLogic()
     {
-        // Eli bıraktı mı kontrolü. Yeni tutunma burada olmaz, çünkü iki el zaten dolu.
         if (!_ctx.LeftGripInput) _ctx.SetLeftAnchor(null, Vector3.zero);
         if (!_ctx.RightGripInput) _ctx.SetRightAnchor(null, Vector3.zero);
     }
@@ -73,7 +71,6 @@ public class PlayerClimbState : PlayerBaseState
         float targetOffset = stats.RestOffset;
         float targetWallDist = stats.BaseWallDistance;
 
-        // W ve S ile kasları gerip kendini çekme / itme
         if (verticalInput > stats.ClimbInputThreshold)
         {
             targetOffset = stats.PullOffset;
@@ -96,7 +93,9 @@ public class PlayerClimbState : PlayerBaseState
         _currentVelocity += (springForce + dampingForce) * Time.deltaTime;
 
         if (_currentVelocity.sqrMagnitude < stats.ClimbSnapThreshold && displacement.sqrMagnitude < stats.ClimbSnapThreshold)
-            _currentVelocity = Vector3.zero;
+        {
+            _currentVelocity = Vector3.Lerp(_currentVelocity, Vector3.zero, Time.deltaTime * 10f);
+        }
 
         _ctx.SetVelocity(_currentVelocity);
     }

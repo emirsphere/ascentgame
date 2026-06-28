@@ -30,7 +30,9 @@ public class PlayerStats : ScriptableObject
     public float AirGraceUpwardVelocity = 0.1f;
 
     [Header("Climbing - Detection")]
-    public float GripReachDistance = 1.5f; // Çok uzağa uçmaması için ideal değer
+    public float GripReachDistance = 1.5f;
+    [Tooltip("Sensör kaydığında tutunmayı x saniye daha geçerli sayar (Coyote Time)")]
+    public float GripBufferTime = 0.15f; // YENİ: Hata toleransı
     public LayerMask ClimbableLayers;
 
     [Header("Climbing - Juice & Physics")]
@@ -39,14 +41,12 @@ public class PlayerStats : ScriptableObject
     public float BaseWallDistance = 0.6f;
     public float LeanWallDistance = 1.8f;
     public float PullWallDistanceMultiplier = 0.8f;
-
-    [Tooltip("Tek elle sarkarken A-D tuşlarıyla sağa sola sallanma şiddeti")]
     public float SwingAmplitude = 1.5f;
 
     public float MuscleSpeed = 6f;
     public float SpringStiffness = 150f;
     public float ClimbInputThreshold = 0.1f;
-    public float ClimbSnapThreshold = 0.05f;
+    public float ClimbSnapThreshold = 0.01f; // Fiziğin daha yumuşak sönümlenmesi için düşürüldü
 
     [Header("Climbing - Jump Off Wall")]
     public float ClimbJumpNormalScale = 1.5f;
