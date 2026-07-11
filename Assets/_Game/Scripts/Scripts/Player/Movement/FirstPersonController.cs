@@ -140,6 +140,39 @@ namespace StarterAssets
             }
         }
 
+        public bool CheckLedgeVault(out Vector3 vaultTarget)
+        {
+            vaultTarget = Vector3.zero;
+
+            // 1. Zirveyi daha rahat bulması için ışını kafanın biraz daha üstünden atıyoruz (0.5f)
+            Vector3 topRayStart = _mainCamera.transform.position + Vector3.up * 0.5f;
+            Vector3 forwardDir = _cameraRoot.transform.forward;
+            forwardDir.y = 0; // Sadece yatayda ileri bak
+            forwardDir.Normalize();
+
+            // 2. İleri yönde duvarı aştık mı? (0.8f ileri)
+            if (!Physics.Raycast(topRayStart, forwardDir, 0.8f, _stats.ClimbableLayers))
+            {
+                // 3. Duvarı aştıysak (boşluktaysak), o boşluktan aşağıya doğru ışın at
+                // İleri gitme miktarını ince kayaları ıskalamaması için 0.6f yapıyoruz.
+                Vector3 downRayStart = topRayStart + forwardDir * 0.6f;
+
+                // 4. RAYCAST YERİNE SPHERECAST: İnce/sivri kayalarda ıskalamamak için aşağıya kalın bir küre atıyoruz.
+                if (Physics.SphereCast(downRayStart, 0.15f, Vector3.down, out RaycastHit hit, 1.5f, _stats.GroundLayers | _stats.ClimbableLayers))
+                {
+                    // 5. Bulunan yüzey gerçekten basılabilecek kadar düz mü? (Aşırı dik yerlere çıkmayı reddet)
+                    float slopeAngle = Vector3.Angle(Vector3.up, hit.normal);
+                    if (slopeAngle < 45f)
+                    {
+                        float yOffset = _controller.height / 2f;
+                        vaultTarget = hit.point + Vector3.up * (yOffset + 0.1f); // 0.1f güvenlik toleransı
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public void ResetFreeLook()
         {
             if (!IsFreeLook) return;
@@ -206,13 +239,13 @@ namespace StarterAssets
 
             Ray ray = new Ray(_mainCamera.transform.position, _mainCamera.transform.forward);
 
-            if (Physics.Raycast(ray, out RaycastHit hit, _stats.GripReachDistance * 1.5f, _stats.ClimbableLayers))
+            // RAFİNE TUTUNMA (SPHERECAST): İğne deliği kadar ince Raycast yerine 20cm kalınlığında SphereCast (Küre) atıyoruz. 
+            // Bu sayede kayanın kenarlarına ve köşelerine çok daha yumuşak, manyetik bir hisle tıklayıp tutunabilirsin.
+            if (Physics.SphereCast(ray, 0.2f, out RaycastHit hit, _stats.GripReachDistance * 1.5f, _stats.ClimbableLayers))
             {
-                // 1. KRİTİK GÜVENLİK (DOT PRODUCT): Işın duvarın iç yüzeyine mi vurdu?
-                // Kameranın bakış yönü ile duvarın normali aynı yönlü ise (0'dan büyükse), duvarın içindeyiz demektir.
                 if (Vector3.Dot(ray.direction, hit.normal) > -0.1f)
                 {
-                    return false; // Hatalı (İç) yüzey, reddet!
+                    return false; // İç yüzey koruması devam ediyor
                 }
 
                 float distToShoulder = Vector3.Distance(_mainCamera.transform.position, hit.point);
