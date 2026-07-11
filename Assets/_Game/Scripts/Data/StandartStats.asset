@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e48a236f08d7e341b11a26d7ffab935, type: 3}
   m_Name: StandartStats
   m_EditorClassIdentifier: 
-  MoveSpeed: 6
-  SprintSpeed: 9
+  MoveSpeed: 10
+  SprintSpeed: 20
   RotationSpeed: 10
   AccelerationRate: 7
   DecelerationRate: 25
   SpeedBlendThreshold: 0.1
-  JumpHeight: 1.2
+  JumpHeight: 2
   Gravity: -15
   AirControlRate: 2
   JumpTimeout: 0.1
@@ -33,6 +33,7 @@ MonoBehaviour:
   AirGraceDuration: 0.15
   AirGraceUpwardVelocity: 0.1
   GripReachDistance: 2.5
+  GripBufferTime: 0.15
   ClimbableLayers:
     serializedVersion: 2
     m_Bits: 128

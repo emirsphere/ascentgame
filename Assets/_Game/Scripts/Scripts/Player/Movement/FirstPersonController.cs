@@ -96,7 +96,16 @@ namespace StarterAssets
             _horizontalSpeed = Mathf.Sqrt(vx * vx + vz * vz);
 
             _currentState.UpdateState();
-            _controller.Move(_velocity * Time.deltaTime);
+
+            // KRİTİK ÇÖZÜM: Tırmanırken CharacterController'ı devre dışı bırakıp hareketi manuel devralıyoruz.
+            if (_controller.enabled)
+            {
+                _controller.Move(_velocity * Time.deltaTime);
+            }
+            else
+            {
+                transform.position += _velocity * Time.deltaTime;
+            }
         }
 
         private void LateUpdate()
@@ -192,5 +201,46 @@ namespace StarterAssets
             if (lfAngle > 360f) lfAngle -= 360f;
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
         }
+        public bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal)
+        {
+            hitPoint = Vector3.zero;
+            hitNormal = Vector3.zero;
+
+            // 1. Işın tam kameranın baktığı yere (Crosshair) atılıyor
+            Ray ray = new Ray(_mainCamera.transform.position, _mainCamera.transform.forward);
+
+            // 2. Çarpışma kontrolü (Menzili biraz uzun tutuyoruz ki tolerans olsun)
+            if (Physics.Raycast(ray, out RaycastHit hit, _stats.GripReachDistance * 1.5f, _stats.ClimbableLayers))
+            {
+                // 3. DÜZELTİLMİŞ MESAFE KONTROLÜ: 
+                // Mesafeyi karakterin merkezinden (göbek/ayak) değil, kameradan (omuz hizası) ölçüyoruz.
+                float distToShoulder = Vector3.Distance(_mainCamera.transform.position, hit.point);
+                if (distToShoulder > _stats.GripReachDistance)
+                {
+                    // Gövdeden çok uzakta, yetişemez
+                    return false;
+                }
+
+                // 4. MEKANİK KİLİT: Tek elle tırmanmayı engelleyen "Kol Açıklığı" kuralı
+                if (oppositeHandAnchor.HasValue)
+                {
+                    float distBetweenHands = Vector3.Distance(hit.point, oppositeHandAnchor.Value);
+                    if (distBetweenHands > _stats.MaxArmSpan)
+                    {
+                        // Diğer el çok uzakta kaldı, kollar kopamaz!
+                        return false;
+                    }
+                }
+
+                // Her şey geçerli, noktayı onayla.
+                hitPoint = hit.point;
+                hitNormal = hit.normal;
+                return true;
+            }
+
+            // Hiçbir şeye çarpmadı
+            return false;
+        }
+        public void SetControllerEnabled(bool isEnabled) => _controller.enabled = isEnabled;
     }
 }

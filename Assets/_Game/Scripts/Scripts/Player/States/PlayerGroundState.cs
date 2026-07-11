@@ -8,6 +8,7 @@ public class PlayerGroundedState : PlayerBaseState
 
     public override void EnterState()
     {
+        _ctx.SetControllerEnabled(true);
         Vector3 vel = _ctx.Velocity;
         vel.y = _ctx.Stats.GroundStickVelocity;
         _ctx.SetVelocity(vel);
@@ -25,12 +26,18 @@ public class PlayerGroundedState : PlayerBaseState
 
     public override void CheckSwitchStates()
     {
-        // Tutunma Kontrolü
-        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null && _ctx.Sensor.CanGrip)
-            _ctx.SetLeftAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+        // YENİ AKTİF SENSÖR: Yerdeyken ilk tutunma
+        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                _ctx.SetLeftAnchor(point, normal);
+        }
 
-        if (_ctx.RightGripInput && _ctx.RightAnchor == null && _ctx.Sensor.CanGrip)
-            _ctx.SetRightAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+        if (_ctx.RightGripInput && _ctx.RightAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                _ctx.SetRightAnchor(point, normal);
+        }
 
         if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Climb); return; }
         else if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Hang); return; }

@@ -61,4 +61,6 @@ public class PlayerStats : ScriptableObject
     public bool EnableHeadBob = true;
     public float BobFrequency = 10.0f;
     public float BobAmplitude = 0.05f;
+    [Header("Climbing - Two Handed Mechanics")]
+    public float MaxArmSpan = 1.8f; // Bir el sabitken diğer elin gidebileceği maksimum mesafe
 }

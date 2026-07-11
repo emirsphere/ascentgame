@@ -4,7 +4,12 @@ public class PlayerAirState : PlayerBaseState
 {
     public PlayerAirState(IPlayerController currentContext, PlayerStateFactory playerStateFactory) : base(currentContext, playerStateFactory) { }
 
-    public override void EnterState() => _ctx.ResetJump();
+    public override void EnterState()
+    {
+        _ctx.SetControllerEnabled(true); // EKSİKTİ, EKLENDİ! (Düşerken zeminden geçmemek için)
+        _ctx.ResetJump();
+    }
+
 
     public override void UpdateState()
     {
@@ -18,12 +23,18 @@ public class PlayerAirState : PlayerBaseState
 
     public override void CheckSwitchStates()
     {
-        // Tutunma Kontrolü (Havadayken duvara uçarken)
-        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null && _ctx.Sensor.CanGrip)
-            _ctx.SetLeftAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+        // YENİ AKTİF SENSÖR: Havada duvara uçarken (Diğer el boşta olduğu için null yolluyoruz)
+        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                _ctx.SetLeftAnchor(point, normal);
+        }
 
-        if (_ctx.RightGripInput && _ctx.RightAnchor == null && _ctx.Sensor.CanGrip)
-            _ctx.SetRightAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+        if (_ctx.RightGripInput && _ctx.RightAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                _ctx.SetRightAnchor(point, normal);
+        }
 
         if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Climb); return; }
         else if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Hang); return; }

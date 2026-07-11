@@ -11,6 +11,7 @@ public class PlayerClimbState : PlayerBaseState
 
     public override void EnterState()
     {
+        _ctx.SetControllerEnabled(false);
         _ctx.IsFreeLook = true;
         _currentVelocity = _ctx.Velocity;
         _currentOffset = _ctx.Stats.RestOffset;
@@ -55,8 +56,27 @@ public class PlayerClimbState : PlayerBaseState
 
     private void HandleGripLogic()
     {
-        if (!_ctx.LeftGripInput) _ctx.SetLeftAnchor(null, Vector3.zero);
-        if (!_ctx.RightGripInput) _ctx.SetRightAnchor(null, Vector3.zero);
+        // 1. Tıkı bıraktıysa o eli serbest bırak ve düş.
+        if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null) _ctx.SetLeftAnchor(null, Vector3.zero);
+        if (!_ctx.RightGripInput && _ctx.RightAnchor != null) _ctx.SetRightAnchor(null, Vector3.zero);
+
+        // 2. Sol el boşta ve tıklandı. Sağı referans noktası vererek tutun.
+        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
+            {
+                _ctx.SetLeftAnchor(point, normal);
+            }
+        }
+
+        // 3. Sağ el boşta ve tıklandı. Solu referans noktası vererek tutun.
+        if (_ctx.RightGripInput && _ctx.RightAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
+            {
+                _ctx.SetRightAnchor(point, normal);
+            }
+        }
     }
 
     private void HandleTwoHandedPhysics()

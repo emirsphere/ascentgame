@@ -9,6 +9,7 @@ public class PlayerHangState : PlayerBaseState
 
     public override void EnterState()
     {
+        _ctx.SetControllerEnabled(false);
         _ctx.IsFreeLook = true;
         _currentVelocity = _ctx.Velocity;
         // Kritik sönümleme katsayısı (Kusursuz yay fiziği formülü)
@@ -43,14 +44,27 @@ public class PlayerHangState : PlayerBaseState
 
     private void HandleGripLogic()
     {
+        // 1. Tıkı bıraktıysa o eli serbest bırak ve düş.
         if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null) _ctx.SetLeftAnchor(null, Vector3.zero);
         if (!_ctx.RightGripInput && _ctx.RightAnchor != null) _ctx.SetRightAnchor(null, Vector3.zero);
 
-        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null && _ctx.Sensor.CanGrip)
-            _ctx.SetLeftAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+        // 2. Sol el boşta ve tıklandı. Sağı referans noktası vererek tutun.
+        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
+            {
+                _ctx.SetLeftAnchor(point, normal);
+            }
+        }
 
-        if (_ctx.RightGripInput && _ctx.RightAnchor == null && _ctx.Sensor.CanGrip)
-            _ctx.SetRightAnchor(_ctx.Sensor.GripHit.point, _ctx.Sensor.GripHit.normal);
+        // 3. Sağ el boşta ve tıklandı. Solu referans noktası vererek tutun.
+        if (_ctx.RightGripInput && _ctx.RightAnchor == null)
+        {
+            if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
+            {
+                _ctx.SetRightAnchor(point, normal);
+            }
+        }
     }
 
     private void HandlePendulumPhysics()

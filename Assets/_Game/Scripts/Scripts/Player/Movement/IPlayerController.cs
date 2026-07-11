@@ -28,10 +28,13 @@ public interface IPlayerController
     void SetVelocity(Vector3 velocity);
     void SwitchState(PlayerBaseState newState);
     void ResetJump();
+    void SetControllerEnabled(bool isEnabled);
 
     Vector2 MoveInput { get; }
     bool JumpInput { get; }
     bool SprintInput { get; }
     bool LeftGripInput { get; }
     bool RightGripInput { get; }
+    // Yeni aktif tutunma sensörü
+    bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
 }
