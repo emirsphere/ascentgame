@@ -37,4 +37,6 @@ public interface IPlayerController
     bool RightGripInput { get; }
     // Yeni aktif tutunma sensörü
     bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
+    // Tırmanılan kayanın üstünün düz olup olmadığını kontrol eden sensör
+    bool CheckLedgeVault(out Vector3 vaultTarget);
 }

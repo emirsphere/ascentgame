@@ -144,6 +144,31 @@ namespace StarterAssets
                 }
             }
         }
+        public bool CheckLedgeVault(out Vector3 vaultTarget)
+        {
+            vaultTarget = Vector3.zero;
+
+            // Kafanın biraz üstünden ileriye bir ışın at
+            Vector3 topRayStart = _mainCamera.transform.position + Vector3.up * 0.3f;
+            Vector3 forwardDir = _cameraRoot.transform.forward;
+            forwardDir.y = 0; // Sadece yatayda ileri bak
+            forwardDir.Normalize();
+
+            // 1. İleri yönde kafamızı çarpacağımız bir duvar var mı?
+            if (!Physics.Raycast(topRayStart, forwardDir, 0.8f, _stats.ClimbableLayers))
+            {
+                // 2. Duvar yoksa (zirveyi aştıysak), o boşluktan aşağı doğru ışın atıp basılacak yeri bul
+                Vector3 downRayStart = topRayStart + forwardDir * 0.8f;
+                if (Physics.Raycast(downRayStart, Vector3.down, out RaycastHit hit, 1f, _stats.GroundLayers | _stats.ClimbableLayers))
+                {
+                    // CharacterController pivotunu zemine tam oturtmak için boyun yarısı kadar yukarı kaydırıyoruz
+                    float yOffset = _controller.height / 2f;
+                    vaultTarget = hit.point + Vector3.up * (yOffset + 0.1f); // 0.1f güvenlik toleransı
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public void ResetFreeLook()
         {

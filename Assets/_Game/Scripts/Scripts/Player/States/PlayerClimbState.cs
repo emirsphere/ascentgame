@@ -52,6 +52,14 @@ public class PlayerClimbState : PlayerBaseState
             _ctx.SetVelocity(_currentVelocity * _ctx.Stats.ClimbJumpVelocityRetain + jumpDir * _ctx.Stats.ClimbJumpImpulse);
             _ctx.SwitchState(_factory.Air);
         }
+        if (_ctx.MoveInput.y > 0.5f)
+        {
+            if (_ctx.CheckLedgeVault(out Vector3 vaultTarget))
+            {
+                _ctx.SwitchState(_factory.Vault);
+                return;
+            }
+        }
     }
 
     private void HandleGripLogic()
