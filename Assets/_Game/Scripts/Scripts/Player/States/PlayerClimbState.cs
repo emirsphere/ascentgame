@@ -52,23 +52,13 @@ public class PlayerClimbState : PlayerBaseState
             _ctx.SetVelocity(_currentVelocity * _ctx.Stats.ClimbJumpVelocityRetain + jumpDir * _ctx.Stats.ClimbJumpImpulse);
             _ctx.SwitchState(_factory.Air);
         }
-        if (_ctx.MoveInput.y > 0.5f)
-        {
-            if (_ctx.CheckLedgeVault(out Vector3 vaultTarget))
-            {
-                _ctx.SwitchState(_factory.Vault);
-                return;
-            }
-        }
     }
 
     private void HandleGripLogic()
     {
-        // 1. Tıkı bıraktıysa o eli serbest bırak ve düş.
         if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null) _ctx.SetLeftAnchor(null, Vector3.zero);
         if (!_ctx.RightGripInput && _ctx.RightAnchor != null) _ctx.SetRightAnchor(null, Vector3.zero);
 
-        // 2. Sol el boşta ve tıklandı. Sağı referans noktası vererek tutun.
         if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
         {
             if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
@@ -77,7 +67,6 @@ public class PlayerClimbState : PlayerBaseState
             }
         }
 
-        // 3. Sağ el boşta ve tıklandı. Solu referans noktası vererek tutun.
         if (_ctx.RightGripInput && _ctx.RightAnchor == null)
         {
             if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
@@ -115,6 +104,15 @@ public class PlayerClimbState : PlayerBaseState
         Vector3 desiredPosition = averagePivot + (Vector3.down * _currentOffset) + (averageNormal * _currentWallDist);
 
         Vector3 displacement = _ctx.PlayerTransform.position - desiredPosition;
+
+        // KORUMA: Çift elde de çok uzaklaşırsak bırak.
+        if (displacement.magnitude > 4.0f)
+        {
+            _ctx.SetLeftAnchor(null, Vector3.zero);
+            _ctx.SetRightAnchor(null, Vector3.zero);
+            return;
+        }
+
         Vector3 springForce = -stats.SpringStiffness * displacement;
         Vector3 dampingForce = -_springDamping * _currentVelocity;
 

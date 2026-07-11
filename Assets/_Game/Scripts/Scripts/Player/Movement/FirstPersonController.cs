@@ -33,11 +33,10 @@ namespace StarterAssets
         private Vector3 _velocity;
         private float _horizontalSpeed;
         private float _cinemachineTargetPitch;
-        private float _cinemachineTargetYaw; // FreeLook için Kafa Dönüşü
+        private float _cinemachineTargetYaw;
         private float _defaultYPos;
         private float _bobTimer;
 
-        // --- IPLAYERCONTROLLER IMPLEMENTATION ---
         public PlayerStats Stats => _stats;
         public PlayerGripSensor Sensor => _sensor;
         public Vector3 Velocity => _velocity;
@@ -45,7 +44,6 @@ namespace StarterAssets
         public Transform PlayerTransform => transform;
         public Transform CameraTransform => _mainCamera.transform;
 
-        // Bağımsız Eller
         public Vector3? LeftAnchor { get; private set; }
         public Vector3? RightAnchor { get; private set; }
         public Vector3 LeftNormal { get; private set; }
@@ -97,7 +95,6 @@ namespace StarterAssets
 
             _currentState.UpdateState();
 
-            // KRİTİK ÇÖZÜM: Tırmanırken CharacterController'ı devre dışı bırakıp hareketi manuel devralıyoruz.
             if (_controller.enabled)
             {
                 _controller.Move(_velocity * Time.deltaTime);
@@ -128,13 +125,11 @@ namespace StarterAssets
 
                 if (IsFreeLook)
                 {
-                    // Asılıyken gövde dönmez, sadece kafa (yaw) döner.
                     _cinemachineTargetYaw += lookX;
-                    _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, -120f, 120f); // Boyun kırma sınırı
+                    _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, -100f, 100f);
                 }
                 else
                 {
-                    // Normal yürüme: Fare gövdeyi çevirir.
                     transform.Rotate(Vector3.up * lookX);
                 }
 
@@ -144,37 +139,14 @@ namespace StarterAssets
                 }
             }
         }
-        public bool CheckLedgeVault(out Vector3 vaultTarget)
-        {
-            vaultTarget = Vector3.zero;
-
-            // Kafanın biraz üstünden ileriye bir ışın at
-            Vector3 topRayStart = _mainCamera.transform.position + Vector3.up * 0.3f;
-            Vector3 forwardDir = _cameraRoot.transform.forward;
-            forwardDir.y = 0; // Sadece yatayda ileri bak
-            forwardDir.Normalize();
-
-            // 1. İleri yönde kafamızı çarpacağımız bir duvar var mı?
-            if (!Physics.Raycast(topRayStart, forwardDir, 0.8f, _stats.ClimbableLayers))
-            {
-                // 2. Duvar yoksa (zirveyi aştıysak), o boşluktan aşağı doğru ışın atıp basılacak yeri bul
-                Vector3 downRayStart = topRayStart + forwardDir * 0.8f;
-                if (Physics.Raycast(downRayStart, Vector3.down, out RaycastHit hit, 1f, _stats.GroundLayers | _stats.ClimbableLayers))
-                {
-                    // CharacterController pivotunu zemine tam oturtmak için boyun yarısı kadar yukarı kaydırıyoruz
-                    float yOffset = _controller.height / 2f;
-                    vaultTarget = hit.point + Vector3.up * (yOffset + 0.1f); // 0.1f güvenlik toleransı
-                    return true;
-                }
-            }
-            return false;
-        }
 
         public void ResetFreeLook()
         {
             if (!IsFreeLook) return;
             IsFreeLook = false;
-            // Serbest bakıştan düşerken, gövdeyi kafanın baktığı yere hizala
+
+            // KİLİTLENME FIX: Serbest bakıştan çıkarken aniden snaplemek yerine
+            // gövdeyi yavaşça çevirmiyoruz, ancak yaw değerini sıfırlarken yumuşatıyoruz
             transform.Rotate(Vector3.up * _cinemachineTargetYaw);
             _cinemachineTargetYaw = 0f;
         }
@@ -226,46 +198,46 @@ namespace StarterAssets
             if (lfAngle > 360f) lfAngle -= 360f;
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
         }
+
         public bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal)
         {
             hitPoint = Vector3.zero;
             hitNormal = Vector3.zero;
 
-            // 1. Işın tam kameranın baktığı yere (Crosshair) atılıyor
             Ray ray = new Ray(_mainCamera.transform.position, _mainCamera.transform.forward);
 
-            // 2. Çarpışma kontrolü (Menzili biraz uzun tutuyoruz ki tolerans olsun)
             if (Physics.Raycast(ray, out RaycastHit hit, _stats.GripReachDistance * 1.5f, _stats.ClimbableLayers))
             {
-                // 3. DÜZELTİLMİŞ MESAFE KONTROLÜ: 
-                // Mesafeyi karakterin merkezinden (göbek/ayak) değil, kameradan (omuz hizası) ölçüyoruz.
+                // 1. KRİTİK GÜVENLİK (DOT PRODUCT): Işın duvarın iç yüzeyine mi vurdu?
+                // Kameranın bakış yönü ile duvarın normali aynı yönlü ise (0'dan büyükse), duvarın içindeyiz demektir.
+                if (Vector3.Dot(ray.direction, hit.normal) > -0.1f)
+                {
+                    return false; // Hatalı (İç) yüzey, reddet!
+                }
+
                 float distToShoulder = Vector3.Distance(_mainCamera.transform.position, hit.point);
                 if (distToShoulder > _stats.GripReachDistance)
                 {
-                    // Gövdeden çok uzakta, yetişemez
                     return false;
                 }
 
-                // 4. MEKANİK KİLİT: Tek elle tırmanmayı engelleyen "Kol Açıklığı" kuralı
                 if (oppositeHandAnchor.HasValue)
                 {
                     float distBetweenHands = Vector3.Distance(hit.point, oppositeHandAnchor.Value);
                     if (distBetweenHands > _stats.MaxArmSpan)
                     {
-                        // Diğer el çok uzakta kaldı, kollar kopamaz!
                         return false;
                     }
                 }
 
-                // Her şey geçerli, noktayı onayla.
                 hitPoint = hit.point;
                 hitNormal = hit.normal;
                 return true;
             }
 
-            // Hiçbir şeye çarpmadı
             return false;
         }
+
         public void SetControllerEnabled(bool isEnabled) => _controller.enabled = isEnabled;
     }
 }
