@@ -39,7 +39,7 @@ MonoBehaviour:
     m_Bits: 128
   RestOffset: 1.4
   PullOffset: 0.4
-  BaseWallDistance: 0.6
+  BaseWallDistance: 0.4
   LeanWallDistance: 1.8
   PullWallDistanceMultiplier: 0.8
   SwingAmplitude: 1.5
@@ -57,3 +57,4 @@ MonoBehaviour:
   EnableHeadBob: 1
   BobFrequency: 2
   BobAmplitude: 0.05
+  MaxArmSpan: 1.8

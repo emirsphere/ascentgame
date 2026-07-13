@@ -32,8 +32,9 @@ namespace StarterAssets
 
         private Vector3 _velocity;
         private float _horizontalSpeed;
-        private float _cinemachineTargetPitch;
-        private float _cinemachineTargetYaw;
+        private float _pitch;
+        private float _freeLookYaw;
+        private float _tilt;
         private float _defaultYPos;
         private float _bobTimer;
 
@@ -108,36 +109,40 @@ namespace StarterAssets
         private void LateUpdate()
         {
             CameraRotation();
-            if (_stats.EnableHeadBob && !IsFreeLook) HandleHeadBob();
-            if (_stats.EnableCameraTilt && !IsFreeLook) HandleCameraTilt();
+
+            if (_stats.EnableHeadBob && !IsFreeLook)
+                HandleHeadBob();
+
+            UpdateCameraTilt();
+            ApplyCameraRotation();
         }
 
         private void CameraRotation()
         {
-            if (_input.look.sqrMagnitude >= 0.01f)
+            if (_input.look.sqrMagnitude < 0.01f) return;
+
+            float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+            float lookX = _input.look.x * _stats.RotationSpeed * deltaTimeMultiplier;
+            float lookY = _input.look.y * _stats.RotationSpeed * deltaTimeMultiplier;
+
+            _pitch -= lookY;
+            _pitch = ClampAngle(_pitch, BottomClamp, TopClamp);
+
+            if (IsFreeLook)
             {
-                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
-                float lookX = _input.look.x * _stats.RotationSpeed * deltaTimeMultiplier;
-                float lookY = _input.look.y * _stats.RotationSpeed * deltaTimeMultiplier;
-
-                _cinemachineTargetPitch -= lookY;
-                _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
-
-                if (IsFreeLook)
-                {
-                    _cinemachineTargetYaw += lookX;
-                    _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, -100f, 100f);
-                }
-                else
-                {
-                    transform.Rotate(Vector3.up * lookX);
-                }
-
-                if (_cameraRoot != null)
-                {
-                    _cameraRoot.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0.0f);
-                }
+                _freeLookYaw += lookX;
+                _freeLookYaw = ClampAngle(_freeLookYaw, -100f, 100f);
             }
+            else
+            {
+                transform.Rotate(Vector3.up * lookX);
+            }
+        }
+
+        private void ApplyCameraRotation()
+        {
+            if (_cameraRoot == null) return;
+            _cameraRoot.transform.localRotation = Quaternion.Euler(_pitch, _freeLookYaw, _tilt);
         }
 
         public bool CheckLedgeVault(out Vector3 vaultTarget)
@@ -180,8 +185,8 @@ namespace StarterAssets
 
             // KİLİTLENME FIX: Serbest bakıştan çıkarken aniden snaplemek yerine
             // gövdeyi yavaşça çevirmiyoruz, ancak yaw değerini sıfırlarken yumuşatıyoruz
-            transform.Rotate(Vector3.up * _cinemachineTargetYaw);
-            _cinemachineTargetYaw = 0f;
+            transform.Rotate(Vector3.up * _freeLookYaw);
+            _freeLookYaw = 0f;
         }
 
         private void HandleHeadBob()
@@ -204,15 +209,17 @@ namespace StarterAssets
             }
         }
 
-        private void HandleCameraTilt()
+        private void UpdateCameraTilt()
         {
             float targetTilt = 0f;
-            if (_input.move.x > 0.1f) targetTilt = -_stats.TiltAngle;
-            else if (_input.move.x < -0.1f) targetTilt = _stats.TiltAngle;
 
-            Quaternion currentRot = _cameraRoot.transform.localRotation;
-            Quaternion targetRot = Quaternion.Euler(currentRot.eulerAngles.x, currentRot.eulerAngles.y, targetTilt);
-            _cameraRoot.transform.localRotation = Quaternion.Slerp(currentRot, targetRot, Time.deltaTime * _stats.TiltSpeed);
+            if (_stats.EnableCameraTilt && !IsFreeLook)
+            {
+                if (_input.move.x > 0.1f) targetTilt = -_stats.TiltAngle;
+                else if (_input.move.x < -0.1f) targetTilt = _stats.TiltAngle;
+            }
+
+            _tilt = Mathf.Lerp(_tilt, targetTilt, Time.deltaTime * _stats.TiltSpeed);
         }
 
         public void SetVelocity(Vector3 newVelocity) => _velocity = newVelocity;
@@ -261,6 +268,7 @@ namespace StarterAssets
                     {
                         return false;
                     }
+
                 }
 
                 hitPoint = hit.point;

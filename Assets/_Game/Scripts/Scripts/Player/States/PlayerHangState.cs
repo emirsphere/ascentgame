@@ -21,10 +21,10 @@ public class PlayerHangState : PlayerBaseState
         HandleGripLogic();
         CheckSwitchStates();
 
-        if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null)
-        {
-            HandlePendulumPhysics();
-        }
+        if (_ctx.LeftAnchor == null || _ctx.RightAnchor == null)
+            return;
+
+        HandlePendulumPhysics();
     }
 
     public override void ExitState() { }

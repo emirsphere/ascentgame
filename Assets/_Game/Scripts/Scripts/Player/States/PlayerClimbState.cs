@@ -23,6 +23,10 @@ public class PlayerClimbState : PlayerBaseState
     {
         HandleGripLogic();
         CheckSwitchStates();
+
+        if (_ctx.LeftAnchor == null || _ctx.RightAnchor == null)
+            return;
+
         HandleTwoHandedPhysics();
     }
 
