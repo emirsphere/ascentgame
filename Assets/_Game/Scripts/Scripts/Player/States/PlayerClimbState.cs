@@ -11,7 +11,6 @@ public class PlayerClimbState : PlayerBaseState
 
     public override void EnterState()
     {
-        // Keep CharacterController active so spring motion cannot pass through rock colliders.
         _ctx.SetControllerEnabled(true);
         _ctx.IsFreeLook = true;
         _currentVelocity = _ctx.Velocity;
@@ -91,15 +90,29 @@ public class PlayerClimbState : PlayerBaseState
 
         if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
         {
-            if (_ctx.TryGetGripPoint(_ctx.RightAnchor, _ctx.RightNormal, out Vector3 point, out Vector3 normal))
+            if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal) &&
+                IsCompatibleWithOtherHand(_ctx.RightAnchor, _ctx.RightNormal, normal))
+            {
                 _ctx.SetLeftAnchor(point, normal);
+            }
         }
 
         if (_ctx.RightGripInput && _ctx.RightAnchor == null)
         {
-            if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, _ctx.LeftNormal, out Vector3 point, out Vector3 normal))
+            if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal) &&
+                IsCompatibleWithOtherHand(_ctx.LeftAnchor, _ctx.LeftNormal, normal))
+            {
                 _ctx.SetRightAnchor(point, normal);
+            }
         }
+    }
+
+    private static bool IsCompatibleWithOtherHand(Vector3? otherAnchor, Vector3 otherNormal, Vector3 candidateNormal)
+    {
+        if (!otherAnchor.HasValue || otherNormal.sqrMagnitude < 0.01f)
+            return true;
+
+        return Vector3.Dot(otherNormal.normalized, candidateNormal.normalized) >= 0.35f;
     }
 
     private void HandleTwoHandedPhysics()
