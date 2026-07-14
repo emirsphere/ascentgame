@@ -9,20 +9,30 @@ public class PlayerHangState : PlayerBaseState
 
     public override void EnterState()
     {
-        _ctx.SetControllerEnabled(false);
+        // Keep CharacterController active so climbing motion remains collision constrained.
+        _ctx.SetControllerEnabled(true);
         _ctx.IsFreeLook = true;
         _currentVelocity = _ctx.Velocity;
-        // Kritik sönümleme katsayısı (Kusursuz yay fiziği formülü)
         _springDamping = 2f * Mathf.Sqrt(_ctx.Stats.SpringStiffness);
     }
 
     public override void UpdateState()
     {
         HandleGripLogic();
-        CheckSwitchStates();
 
-        if (_ctx.LeftAnchor == null || _ctx.RightAnchor == null)
+        // Do not continue executing this state's physics after a transition condition.
+        if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null)
+        {
+            _ctx.SwitchState(_factory.Climb);
             return;
+        }
+
+        if (_ctx.LeftAnchor == null && _ctx.RightAnchor == null)
+        {
+            _ctx.ResetFreeLook();
+            _ctx.SwitchState(_factory.Air);
+            return;
+        }
 
         HandlePendulumPhysics();
     }
@@ -44,39 +54,34 @@ public class PlayerHangState : PlayerBaseState
 
     private void HandleGripLogic()
     {
-        // 1. Tıkı bıraktıysa o eli serbest bırak ve düş.
-        if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null) _ctx.SetLeftAnchor(null, Vector3.zero);
-        if (!_ctx.RightGripInput && _ctx.RightAnchor != null) _ctx.SetRightAnchor(null, Vector3.zero);
+        if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null)
+            _ctx.SetLeftAnchor(null, Vector3.zero);
 
-        // 2. Sol el boşta ve tıklandı. Sağı referans noktası vererek tutun.
+        if (!_ctx.RightGripInput && _ctx.RightAnchor != null)
+            _ctx.SetRightAnchor(null, Vector3.zero);
+
         if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
         {
-            if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
-            {
+            if (_ctx.TryGetGripPoint(_ctx.RightAnchor, _ctx.RightNormal, out Vector3 point, out Vector3 normal))
                 _ctx.SetLeftAnchor(point, normal);
-            }
         }
 
-        // 3. Sağ el boşta ve tıklandı. Solu referans noktası vererek tutun.
         if (_ctx.RightGripInput && _ctx.RightAnchor == null)
         {
-            if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
-            {
+            if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, _ctx.LeftNormal, out Vector3 point, out Vector3 normal))
                 _ctx.SetRightAnchor(point, normal);
-            }
         }
     }
 
     private void HandlePendulumPhysics()
     {
-        if (!_ctx.LeftAnchor.HasValue && !_ctx.RightAnchor.HasValue) return;
-
         Vector3 anchor = _ctx.LeftAnchor.HasValue ? _ctx.LeftAnchor.Value : _ctx.RightAnchor.Value;
         Vector3 normal = _ctx.LeftAnchor.HasValue ? _ctx.LeftNormal : _ctx.RightNormal;
 
-        Vector3 desiredPosition = anchor + (Vector3.down * _ctx.Stats.RestOffset) + (normal * _ctx.Stats.BaseWallDistance);
+        Vector3 desiredPosition = anchor
+            + Vector3.down * _ctx.Stats.RestOffset
+            + normal * _ctx.Stats.BaseWallDistance;
 
-        // A/D ile Momentum Kazanımı
         Vector3 swingRight = Vector3.Cross(Vector3.up, normal).normalized;
         desiredPosition += swingRight * _ctx.MoveInput.x * _ctx.Stats.SwingAmplitude;
 
@@ -86,8 +91,8 @@ public class PlayerHangState : PlayerBaseState
 
         _currentVelocity += (springForce + dampingForce) * Time.deltaTime;
 
-        // Fiziği daha yumuşak bitirmek için tolerans eşiği düşürüldü
-        if (_currentVelocity.sqrMagnitude < _ctx.Stats.ClimbSnapThreshold && displacement.sqrMagnitude < _ctx.Stats.ClimbSnapThreshold)
+        if (_currentVelocity.sqrMagnitude < _ctx.Stats.ClimbSnapThreshold &&
+            displacement.sqrMagnitude < _ctx.Stats.ClimbSnapThreshold)
         {
             _currentVelocity = Vector3.Lerp(_currentVelocity, Vector3.zero, Time.deltaTime * 10f);
         }
