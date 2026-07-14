@@ -35,7 +35,7 @@ public class PlayerStats : ScriptableObject
     public float GripBufferTime = 0.15f; // YENİ: Hata toleransı
     public LayerMask ClimbableLayers;
 
-    [Header("Climbing - Juice & Physics")]
+    [Header("Climbing - Legacy Spring Tuning (unused by Hang/Climb)")]
     public float RestOffset = 1.4f;
     public float PullOffset = 0.4f;
     public float BaseWallDistance = 0.6f;
@@ -47,6 +47,14 @@ public class PlayerStats : ScriptableObject
     public float SpringStiffness = 150f;
     public float ClimbInputThreshold = 0.1f;
     public float ClimbSnapThreshold = 0.01f; // Fiziğin daha yumuşak sönümlenmesi için düşürüldü
+
+    [Header("Climbing - Virtual Arms")]
+    public float VirtualShoulderHeight = 1.4f;
+    public float VirtualShoulderHalfWidth = 0.25f;
+    public float MaxArmReach = 1.5f;
+    public float GripReachTolerance = 0.15f;
+    public float ClimbingGravity = -15.0f;
+    [Range(1, 4)] public int ClimbingConstraintIterations = 2;
 
     [Header("Climbing - Jump Off Wall")]
     public float ClimbJumpNormalScale = 1.5f;

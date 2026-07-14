@@ -26,6 +26,7 @@ public interface IPlayerController
     void ResetFreeLook();
 
     void SetVelocity(Vector3 velocity);
+    void SimulateClimbingMovement();
     void SwitchState(PlayerBaseState newState);
     void ResetJump();
     void SetControllerEnabled(bool isEnabled);
@@ -36,7 +37,7 @@ public interface IPlayerController
     bool LeftGripInput { get; }
     bool RightGripInput { get; }
     // Yeni aktif tutunma sensörü
-    bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
+    bool TryGetGripPoint(float handSide, Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
     // Tırmanılan kayanın üstünün düz olup olmadığını kontrol eden sensör
     bool CheckLedgeVault(out Vector3 vaultTarget);
 
