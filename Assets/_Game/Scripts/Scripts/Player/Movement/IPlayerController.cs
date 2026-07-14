@@ -34,6 +34,7 @@ public interface IPlayerController
     bool LeftGripInput { get; }
     bool RightGripInput { get; }
 
+    bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
     bool TryGetGripPoint(
         Vector3? oppositeHandAnchor,
         Vector3 oppositeHandNormal,
