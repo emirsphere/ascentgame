@@ -12,6 +12,7 @@ public interface IPlayerController
     Transform PlayerTransform { get; }
     Transform CameraTransform { get; }
 
+    // --- BAĞIMSIZ EL (FREE-CLIMB) SİSTEMİ ---
     Vector3? LeftAnchor { get; }
     Vector3? RightAnchor { get; }
     Vector3 LeftNormal { get; }
@@ -20,6 +21,7 @@ public interface IPlayerController
     void SetLeftAnchor(Vector3? point, Vector3 normal);
     void SetRightAnchor(Vector3? point, Vector3 normal);
 
+    // Asılıyken kafayı vücuttan bağımsız çevirmek için
     bool IsFreeLook { get; set; }
     void ResetFreeLook();
 
@@ -33,13 +35,9 @@ public interface IPlayerController
     bool SprintInput { get; }
     bool LeftGripInput { get; }
     bool RightGripInput { get; }
-
+    // Yeni aktif tutunma sensörü
     bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
-    bool TryGetGripPoint(
-        Vector3? oppositeHandAnchor,
-        Vector3 oppositeHandNormal,
-        out Vector3 hitPoint,
-        out Vector3 hitNormal);
-
+    // Tırmanılan kayanın üstünün düz olup olmadığını kontrol eden sensör
     bool CheckLedgeVault(out Vector3 vaultTarget);
+
 }
