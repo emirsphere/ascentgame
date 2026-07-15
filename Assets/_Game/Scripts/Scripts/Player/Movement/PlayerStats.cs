@@ -56,6 +56,11 @@ public class PlayerStats : ScriptableObject
     public float ClimbingGravity = -15.0f;
     [Range(1, 4)] public int ClimbingConstraintIterations = 2;
 
+    [Header("Climbing - Body Placement")]
+    public float ClimbBodyFollowSpeed = 3.0f;
+    public float ClimbBodyDrop = 0.85f;
+    public float ClimbWallDistance = 0.55f;
+
     [Header("Climbing - Jump Off Wall")]
     public float ClimbJumpNormalScale = 1.5f;
     public float ClimbJumpUpScale = 1.5f;

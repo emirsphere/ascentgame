@@ -37,6 +37,8 @@ namespace StarterAssets
         private float _tilt;
         private float _defaultYPos;
         private float _bobTimer;
+        private Vector3 _climbingMoveDisplacement;
+        private bool _hasClimbingMoveDisplacement;
         private const float GripDebugLogInterval = 0.25f;
         private GripAcquisitionResult _lastLeftGripResult;
         private GripAcquisitionResult _lastRightGripResult;
@@ -113,13 +115,26 @@ namespace StarterAssets
 
             _currentState.UpdateState();
 
+            Vector3 requestedDisplacement = _hasClimbingMoveDisplacement
+                ? _climbingMoveDisplacement
+                : _velocity * Time.deltaTime;
+            bool isClimbingMove = _hasClimbingMoveDisplacement;
+            _hasClimbingMoveDisplacement = false;
+            Vector3 positionBeforeMove = transform.position;
+
             if (_controller.enabled)
             {
-                _controller.Move(_velocity * Time.deltaTime);
+                _controller.Move(requestedDisplacement);
             }
             else
             {
-                transform.position += _velocity * Time.deltaTime;
+                transform.position += requestedDisplacement;
+            }
+
+            if (isClimbingMove)
+            {
+                Vector3 collisionDisplacement = transform.position - positionBeforeMove - requestedDisplacement;
+                _velocity += collisionDisplacement / Time.deltaTime;
             }
         }
 
@@ -251,6 +266,8 @@ namespace StarterAssets
             Vector3 startPosition = transform.position;
             Vector3 predictedPosition = startPosition + velocity * Time.deltaTime;
 
+            ApplyClimbBodyPlacement(ref predictedPosition);
+
             for (int iteration = 0; iteration < _stats.ClimbingConstraintIterations; iteration++)
             {
                 if (LeftAnchor.HasValue)
@@ -260,10 +277,75 @@ namespace StarterAssets
                     ConstrainArm(ref predictedPosition, RightAnchor.Value, 1f);
             }
 
-            velocity = (predictedPosition - startPosition) / Time.deltaTime;
             RemoveOutwardArmVelocity(ref velocity, startPosition, predictedPosition, LeftAnchor, -1f);
             RemoveOutwardArmVelocity(ref velocity, startPosition, predictedPosition, RightAnchor, 1f);
             _velocity = velocity;
+            _climbingMoveDisplacement = predictedPosition - startPosition;
+            _hasClimbingMoveDisplacement = true;
+        }
+
+        private void ApplyClimbBodyPlacement(ref Vector3 candidateRootPosition)
+        {
+            if (!TryGetPreferredClimbBodyPosition(out Vector3 preferredRootPosition)) return;
+
+            Vector3 placementDelta = preferredRootPosition - candidateRootPosition;
+            candidateRootPosition += Vector3.ClampMagnitude(placementDelta, _stats.ClimbBodyFollowSpeed * Time.deltaTime);
+        }
+
+        private bool TryGetPreferredClimbBodyPosition(out Vector3 preferredRootPosition)
+        {
+            preferredRootPosition = Vector3.zero;
+            Vector3 surfaceNormal;
+
+            if (LeftAnchor.HasValue && RightAnchor.HasValue)
+            {
+                Vector3 gripCenter = (LeftAnchor.Value + RightAnchor.Value) * 0.5f;
+                surfaceNormal = GetClimbSurfaceNormal();
+                preferredRootPosition = gripCenter
+                    - Vector3.up * (_stats.VirtualShoulderHeight + _stats.ClimbBodyDrop)
+                    + surfaceNormal * _stats.ClimbWallDistance;
+                return true;
+            }
+
+            if (LeftAnchor.HasValue)
+            {
+                surfaceNormal = GetClimbSurfaceNormal();
+                preferredRootPosition = LeftAnchor.Value
+                    - Vector3.up * (_stats.VirtualShoulderHeight + _stats.ClimbBodyDrop)
+                    - transform.right * (-_stats.VirtualShoulderHalfWidth)
+                    + surfaceNormal * _stats.ClimbWallDistance;
+                return true;
+            }
+
+            if (RightAnchor.HasValue)
+            {
+                surfaceNormal = GetClimbSurfaceNormal();
+                preferredRootPosition = RightAnchor.Value
+                    - Vector3.up * (_stats.VirtualShoulderHeight + _stats.ClimbBodyDrop)
+                    - transform.right * _stats.VirtualShoulderHalfWidth
+                    + surfaceNormal * _stats.ClimbWallDistance;
+                return true;
+            }
+
+            return false;
+        }
+
+        private Vector3 GetClimbSurfaceNormal()
+        {
+            if (LeftAnchor.HasValue && RightAnchor.HasValue)
+            {
+                Vector3 combinedNormal = LeftNormal + RightNormal;
+                if (combinedNormal.sqrMagnitude > 0.001f)
+                    return combinedNormal.normalized;
+            }
+
+            if (LeftAnchor.HasValue && LeftNormal.sqrMagnitude > 0.001f)
+                return LeftNormal.normalized;
+
+            if (RightAnchor.HasValue && RightNormal.sqrMagnitude > 0.001f)
+                return RightNormal.normalized;
+
+            return Vector3.zero;
         }
 
         private void ConstrainArm(ref Vector3 predictedRootPosition, Vector3 anchor, float side)
