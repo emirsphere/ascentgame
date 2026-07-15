@@ -286,6 +286,7 @@ namespace StarterAssets
 
         private void ApplyClimbBodyPlacement(ref Vector3 candidateRootPosition)
         {
+            if (!LeftAnchor.HasValue || !RightAnchor.HasValue) return;
             if (!TryGetPreferredClimbBodyPosition(out Vector3 preferredRootPosition)) return;
 
             Vector3 placementDelta = preferredRootPosition - candidateRootPosition;
@@ -295,39 +296,14 @@ namespace StarterAssets
         private bool TryGetPreferredClimbBodyPosition(out Vector3 preferredRootPosition)
         {
             preferredRootPosition = Vector3.zero;
-            Vector3 surfaceNormal;
+            if (!LeftAnchor.HasValue || !RightAnchor.HasValue) return false;
 
-            if (LeftAnchor.HasValue && RightAnchor.HasValue)
-            {
-                Vector3 gripCenter = (LeftAnchor.Value + RightAnchor.Value) * 0.5f;
-                surfaceNormal = GetClimbSurfaceNormal();
-                preferredRootPosition = gripCenter
-                    - Vector3.up * (_stats.VirtualShoulderHeight + _stats.ClimbBodyDrop)
-                    + surfaceNormal * _stats.ClimbWallDistance;
-                return true;
-            }
-
-            if (LeftAnchor.HasValue)
-            {
-                surfaceNormal = GetClimbSurfaceNormal();
-                preferredRootPosition = LeftAnchor.Value
-                    - Vector3.up * (_stats.VirtualShoulderHeight + _stats.ClimbBodyDrop)
-                    - transform.right * (-_stats.VirtualShoulderHalfWidth)
-                    + surfaceNormal * _stats.ClimbWallDistance;
-                return true;
-            }
-
-            if (RightAnchor.HasValue)
-            {
-                surfaceNormal = GetClimbSurfaceNormal();
-                preferredRootPosition = RightAnchor.Value
-                    - Vector3.up * (_stats.VirtualShoulderHeight + _stats.ClimbBodyDrop)
-                    - transform.right * _stats.VirtualShoulderHalfWidth
-                    + surfaceNormal * _stats.ClimbWallDistance;
-                return true;
-            }
-
-            return false;
+            Vector3 gripCenter = (LeftAnchor.Value + RightAnchor.Value) * 0.5f;
+            Vector3 desiredShoulderCenter = gripCenter
+                - Vector3.up * _stats.TwoHandShoulderDrop
+                + GetClimbSurfaceNormal() * (_controller.radius + _stats.ClimbWallClearance);
+            preferredRootPosition = desiredShoulderCenter - Vector3.up * _stats.VirtualShoulderHeight;
+            return true;
         }
 
         private Vector3 GetClimbSurfaceNormal()

@@ -58,8 +58,8 @@ public class PlayerStats : ScriptableObject
 
     [Header("Climbing - Body Placement")]
     public float ClimbBodyFollowSpeed = 3.0f;
-    public float ClimbBodyDrop = 0.85f;
-    public float ClimbWallDistance = 0.55f;
+    public float TwoHandShoulderDrop = 0.9f;
+    public float ClimbWallClearance = 0.25f;
 
     [Header("Climbing - Jump Off Wall")]
     public float ClimbJumpNormalScale = 1.5f;
