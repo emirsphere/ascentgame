@@ -32,7 +32,7 @@ MonoBehaviour:
   GroundStickVelocity: -2
   AirGraceDuration: 0.15
   AirGraceUpwardVelocity: 0.1
-  GripReachDistance: 2.5
+  GripReachDistance: 1.8
   GripBufferTime: 0.15
   ClimbableLayers:
     serializedVersion: 2
@@ -57,4 +57,4 @@ MonoBehaviour:
   EnableHeadBob: 1
   BobFrequency: 2
   BobAmplitude: 0.05
-  MaxArmSpan: 1.8
+  MaxArmSpan: 2

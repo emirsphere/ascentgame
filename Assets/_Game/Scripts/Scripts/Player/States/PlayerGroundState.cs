@@ -29,13 +29,13 @@ public class PlayerGroundedState : PlayerBaseState
         // YENİ AKTİF SENSÖR: Yerdeyken ilk tutunma
         if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
         {
-            if (_ctx.TryGetGripPoint(-1f, null, out Vector3 point, out Vector3 normal))
+            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
                 _ctx.SetLeftAnchor(point, normal);
         }
 
         if (_ctx.RightGripInput && _ctx.RightAnchor == null)
         {
-            if (_ctx.TryGetGripPoint(1f, null, out Vector3 point, out Vector3 normal))
+            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
                 _ctx.SetRightAnchor(point, normal);
         }
 
