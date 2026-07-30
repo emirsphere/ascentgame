@@ -25,22 +25,22 @@ MonoBehaviour:
   TerminalVelocity: 53
   AirDragRate: 0.5
   GroundedOffset: -0.14
-  GroundedRadius: 0.35
+  GroundedRadius: 0.7
   GroundLayers:
     serializedVersion: 2
     m_Bits: 8
   GroundStickVelocity: -2
   AirGraceDuration: 0.15
   AirGraceUpwardVelocity: 0.1
-  GripReachDistance: 1.8
+  GripReachDistance: 3.6
   GripBufferTime: 0.15
   ClimbableLayers:
     serializedVersion: 2
     m_Bits: 128
-  RestOffset: 1.4
-  PullOffset: 0.4
-  BaseWallDistance: 0.4
-  LeanWallDistance: 1.8
+  RestOffset: 2.8
+  PullOffset: 0.8
+  BaseWallDistance: 1.2
+  LeanWallDistance: 3.6
   PullWallDistanceMultiplier: 0.8
   SwingAmplitude: 1.5
   MuscleSpeed: 6
@@ -57,4 +57,4 @@ MonoBehaviour:
   EnableHeadBob: 1
   BobFrequency: 2
   BobAmplitude: 0.05
-  MaxArmSpan: 2
+  MaxArmSpan: 4

@@ -40,6 +40,7 @@ namespace StarterAssets
         public PlayerStats Stats => _stats;
         public PlayerGripSensor Sensor => _sensor;
         public Vector3 Velocity => _velocity;
+        public Vector3 VaultTargetPos { get; set; }
         public float HorizontalSpeed => _horizontalSpeed;
         public Transform PlayerTransform => transform;
         public Transform CameraTransform => _mainCamera.transform;
@@ -144,28 +145,28 @@ namespace StarterAssets
         {
             vaultTarget = Vector3.zero;
 
-            // 1. Zirveyi daha rahat bulması için ışını kafanın biraz daha üstünden atıyoruz (0.5f)
-            Vector3 topRayStart = _mainCamera.transform.position + Vector3.up * 0.5f;
+            // 1. Işın kafanın 1 metre üstünden çıksın (Sorun yok)
+            Vector3 topRayStart = _mainCamera.transform.position + Vector3.up * 1.0f;
             Vector3 forwardDir = _cameraRoot.transform.forward;
-            forwardDir.y = 0; // Sadece yatayda ileri bak
+            forwardDir.y = 0;
             forwardDir.Normalize();
 
-            // 2. İleri yönde duvarı aştık mı? (0.8f ileri)
-            if (!Physics.Raycast(topRayStart, forwardDir, 0.8f, _stats.ClimbableLayers))
+            // 2. İLERİ BAKIŞ: Karakter duvardan 1.2m uzakta. Çatıyı anlamak için 2.0 metre ileri bak.
+            if (!Physics.Raycast(topRayStart, forwardDir, 2.0f, _stats.ClimbableLayers))
             {
-                // 3. Duvarı aştıysak (boşluktaysak), o boşluktan aşağıya doğru ışın at
-                // İleri gitme miktarını ince kayaları ıskalamaması için 0.6f yapıyoruz.
-                Vector3 downRayStart = topRayStart + forwardDir * 0.6f;
+                // 3. AŞAĞI BAKIŞ (KRİTİK DÜZELTME): Çatının ucuna değil, güvenli bir şekilde 
+                // çatının iyice iç kısmına (2.2 metre ileriye) gidip aşağı ışın atıyoruz.
+                Vector3 downRayStart = topRayStart + forwardDir * 2.2f;
 
-                // 4. RAYCAST YERİNE SPHERECAST: İnce/sivri kayalarda ıskalamamak için aşağıya kalın bir küre atıyoruz.
-                if (Physics.SphereCast(downRayStart, 0.15f, Vector3.down, out RaycastHit hit, 1.5f, _stats.GroundLayers | _stats.ClimbableLayers))
+                // 4. Aşağı doğru kalın küre (SphereCast)
+                if (Physics.SphereCast(downRayStart, 0.30f, Vector3.down, out RaycastHit hit, 3.0f, _stats.GroundLayers | _stats.ClimbableLayers))
                 {
-                    // 5. Bulunan yüzey gerçekten basılabilecek kadar düz mü? (Aşırı dik yerlere çıkmayı reddet)
                     float slopeAngle = Vector3.Angle(Vector3.up, hit.normal);
                     if (slopeAngle < 45f)
                     {
                         float yOffset = _controller.height / 2f;
-                        vaultTarget = hit.point + Vector3.up * (yOffset + 0.1f); // 0.1f güvenlik toleransı
+                        // Güvenlik toleransını da hafif artırdık ki yerin içine girmesin
+                        vaultTarget = hit.point + Vector3.up * (yOffset + 0.2f);
                         return true;
                     }
                 }
@@ -243,6 +244,11 @@ namespace StarterAssets
             // Bu sayede kayanın kenarlarına ve köşelerine çok daha yumuşak, manyetik bir hisle tıklayıp tutunabilirsin.
             if (Physics.SphereCast(ray, 0.2f, out RaycastHit hit, _stats.GripReachDistance * 1.5f, _stats.ClimbableLayers))
             {
+                float wallAngle = Vector3.Angle(Vector3.up, hit.normal);
+                if (wallAngle < 45f || wallAngle > 135f)
+                {
+                    return false; // Burası yürünecek yer veya tavan, tutunma!
+                }
                 if (Vector3.Dot(ray.direction, hit.normal) > -0.1f)
                 {
                     return false; // İç yüzey koruması devam ediyor

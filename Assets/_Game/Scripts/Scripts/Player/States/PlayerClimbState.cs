@@ -41,15 +41,17 @@ public class PlayerClimbState : PlayerBaseState
         }
         else if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
         {
+            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
             _ctx.SwitchState(_factory.Vault);
             return; // State değiştiği için fonksiyonu burada kes
         }
-        // EKLENEN KISIM: Eğer kavisli yüzey yavaşça düzleştiyse ve ayaklarımız yere değiyorsa tırmanmayı bırak, yürümeye geç.
         else if (_ctx.Sensor.IsGrounded)
-        {
-            _ctx.SwitchState(_factory.Grounded);
-            return;
-        }
+{
+    _ctx.SwitchState(_factory.Grounded);
+    return;
+}
+
+
 
         else if (_ctx.JumpInput)
         {

@@ -11,24 +11,15 @@ public class PlayerVaultState : PlayerBaseState
 
     public override void EnterState()
     {
-        _ctx.SetControllerEnabled(false); // Fizik motorunu kapalı tut!
+        _ctx.SetControllerEnabled(false);
         _ctx.ResetFreeLook();
 
         _startPos = _ctx.PlayerTransform.position;
         _vaultProgress = 0f;
 
-        // Hedefi bir kez daha doğrula
-        if (_ctx.CheckLedgeVault(out Vector3 target))
-        {
-            _targetPos = target;
-        }
-        else
-        {
-            // Beklenmedik bir hata olursa güvenli düşüş
-            _ctx.SwitchState(_factory.Air);
-        }
+        // İkinci Raycast kontrolünü SİLDİK. Hedefi direkt hafızadan çekiyoruz.
+        _targetPos = _ctx.VaultTargetPos;
 
-        // Tırmanma tutamaklarını temizle
         _ctx.SetLeftAnchor(null, Vector3.zero);
         _ctx.SetRightAnchor(null, Vector3.zero);
     }
