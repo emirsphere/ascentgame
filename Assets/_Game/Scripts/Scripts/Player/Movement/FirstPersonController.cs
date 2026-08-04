@@ -183,6 +183,10 @@ namespace StarterAssets
             // gövdeyi yavaşça çevirmiyoruz, ancak yaw değerini sıfırlarken yumuşatıyoruz
             transform.Rotate(Vector3.up * _cinemachineTargetYaw);
             _cinemachineTargetYaw = 0f;
+            if (_cameraRoot != null)
+            {
+                _cameraRoot.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, 0.0f, 0.0f);
+            }
         }
 
         private void HandleHeadBob()
@@ -237,7 +241,12 @@ namespace StarterAssets
         {
             hitPoint = Vector3.zero;
             hitNormal = Vector3.zero;
-
+            // GUARD CLAUSE: Eğer karakterin kafasının üstünde boşluk (Vault yapılabilen bir plato) varsa, 
+            // oyuncu fareye asılsa bile yeni tutunma noktası VERMEYİ REDDET!
+            if (CheckLedgeVault(out _))
+            {
+                return false;
+            }
             Ray ray = new Ray(_mainCamera.transform.position, _mainCamera.transform.forward);
 
             // RAFİNE TUTUNMA (SPHERECAST): İğne deliği kadar ince Raycast yerine 20cm kalınlığında SphereCast (Küre) atıyoruz. 

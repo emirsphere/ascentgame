@@ -30,14 +30,25 @@ namespace Ascent.Player.Sensors
 
             Vector3 sphereOrigin = transform.position + (Vector3.up * Controller.radius);
 
-            // KRİTİK DÜZELTME BURASI: Sadece GroundLayers'a değil, ClimbableLayers'a da (Kayalara) çarpıp çarpmadığını kontrol et.
-            bool hitGround = Physics.SphereCast(sphereOrigin, Controller.radius, Vector3.down, out _groundHit, 0.3f, Stats.GroundLayers | Stats.ClimbableLayers);
+            // MÜHENDİSLİK DÜZELTMESİ: 
+            // SphereCast'in yarıçapını (radius) karakterden %10-15 daha küçük yapıyoruz ki
+            // yanımızdaki dik duvarlara sürtüp yanlış 'Grounded' sinyali üretmesin.
+            float safeRadius = Controller.radius * 0.85f;
+
+            bool hitGround = Physics.SphereCast(
+                sphereOrigin,
+                safeRadius, // <-- Artık Controller.radius yerine bu güvenli çapı kullanıyoruz
+                Vector3.down,
+                out _groundHit,
+                0.3f,
+                Stats.GroundLayers | Stats.ClimbableLayers
+            );
 
             if (hitGround)
             {
                 GroundNormal = _groundHit.normal;
                 float slopeAngle = Vector3.Angle(Vector3.up, GroundNormal);
-                // Unity'nin kendi CharacterController içindeki slopeLimit'ini baz alıyoruz
+
                 IsGrounded = slopeAngle <= Controller.slopeLimit;
                 IsSliding = !IsGrounded;
             }

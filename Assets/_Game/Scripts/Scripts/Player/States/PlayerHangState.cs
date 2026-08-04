@@ -18,6 +18,12 @@ public class PlayerHangState : PlayerBaseState
 
     public override void UpdateState()
     {
+        if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
+        {
+            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
+            _ctx.SwitchState(_factory.Vault);
+            return;
+        }
         HandleGripLogic();
         CheckSwitchStates();
 
@@ -37,12 +43,7 @@ public class PlayerHangState : PlayerBaseState
         }
 
         // EKLENEN KISIM: Tek elle asılıyken de tepeye W ile çıkmaya çalışırsa Vault'a geç
-        else if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
-        {
-            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
-            _ctx.SwitchState(_factory.Vault);
-            return;
-        }
+        
         else if (_ctx.LeftAnchor == null && _ctx.RightAnchor == null)
         {
             _ctx.ResetFreeLook();

@@ -46,7 +46,19 @@ public class PlayerAirState : PlayerBaseState
     {
         PlayerStats stats = _ctx.Stats;
         Vector3 vel = _ctx.Velocity;
-        if (vel.y > -stats.TerminalVelocity) vel.y += stats.Gravity * Time.deltaTime;
+
+        // EĞER DUVARDAN KAYIYORSA (SLIDING):
+        // Duvara takılıp süzülmesini engellemek için dikey düşüş hızını ekstra artırıyoruz
+        if (_ctx.Sensor.IsSliding)
+        {
+            // Duvar sürtünmesini kırmak için ekstra dikey ivme
+            vel.y += stats.Gravity * 2.0f * Time.deltaTime;
+        }
+        else if (vel.y > -stats.TerminalVelocity)
+        {
+            vel.y += stats.Gravity * Time.deltaTime;
+        }
+
         _ctx.SetVelocity(vel);
     }
 

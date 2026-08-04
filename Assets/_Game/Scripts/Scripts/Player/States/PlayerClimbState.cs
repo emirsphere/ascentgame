@@ -21,6 +21,12 @@ public class PlayerClimbState : PlayerBaseState
 
     public override void UpdateState()
     {
+        if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
+        {
+            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
+            _ctx.SwitchState(_factory.Vault);
+            return; // State değiştiği için fonksiyonu burada kes
+        }
         HandleGripLogic();
         CheckSwitchStates();
         HandleTwoHandedPhysics();
@@ -39,17 +45,12 @@ public class PlayerClimbState : PlayerBaseState
         {
             _ctx.SwitchState(_factory.Hang);
         }
-        else if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
-        {
-            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
-            _ctx.SwitchState(_factory.Vault);
-            return; // State değiştiği için fonksiyonu burada kes
-        }
+
         else if (_ctx.Sensor.IsGrounded)
-{
-    _ctx.SwitchState(_factory.Grounded);
-    return;
-}
+        {
+            _ctx.SwitchState(_factory.Grounded);
+            return;
+        }
 
 
 
