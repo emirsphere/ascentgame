@@ -18,12 +18,29 @@ public class PlayerHangState : PlayerBaseState
 
     public override void UpdateState()
     {
+        // 1. ZORUNLU DÜŞÜŞ KİLİDİ
+        if (_ctx.Stamina.CurrentStamina <= 0f)
+        {
+            _ctx.SetLeftAnchor(null, Vector3.zero);
+            _ctx.SetRightAnchor(null, Vector3.zero);
+            _ctx.SetVelocity(Vector3.down * 2f);
+
+            // İŞTE SİHİRLİ DOKUNUŞ BURASI: 
+            // Oyuncu fareden elini çekene kadar tutunma tuşlarını geçersiz kıl (Öldür)!
+            _ctx.LockGrips();
+            _ctx.ResetFreeLook();
+
+            _ctx.SwitchState(_factory.Air);
+            return;
+        }
+
         if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
         {
-            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
+            _ctx.VaultTargetPos = targetPos;
             _ctx.SwitchState(_factory.Vault);
             return;
         }
+
         HandleGripLogic();
         CheckSwitchStates();
 
@@ -31,6 +48,9 @@ public class PlayerHangState : PlayerBaseState
         {
             HandlePendulumPhysics();
         }
+
+        // Staminayı erit
+        _ctx.Stamina.ConsumeStamina(_ctx.Stats.ClimbDrainRate * Time.deltaTime);
     }
 
     public override void ExitState() { }
@@ -43,7 +63,7 @@ public class PlayerHangState : PlayerBaseState
         }
 
         // EKLENEN KISIM: Tek elle asılıyken de tepeye W ile çıkmaya çalışırsa Vault'a geç
-        
+
         else if (_ctx.LeftAnchor == null && _ctx.RightAnchor == null)
         {
             _ctx.ResetFreeLook();

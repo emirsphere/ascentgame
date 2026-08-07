@@ -63,4 +63,9 @@ public class PlayerStats : ScriptableObject
     public float BobAmplitude = 0.05f;
     [Header("Climbing - Two Handed Mechanics")]
     public float MaxArmSpan = 1.8f; // Bir el sabitken diğer elin gidebileceği maksimum mesafe
+    [Header("Stamina System")]
+    public float MaxStamina = 100f;
+    public float ClimbDrainRate = 15f; // Saniyede duvarda asılı kalma maliyeti
+    public float JumpStaminaCost = 25f; // Duvardan zıplama maliyeti
+    public float StaminaRegenRate = 35f; // Yerdeyken saniyede dolma hızı
 }

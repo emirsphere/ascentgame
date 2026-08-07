@@ -36,6 +36,9 @@ namespace StarterAssets
         private float _cinemachineTargetYaw;
         private float _defaultYPos;
         private float _bobTimer;
+        private Vector3 _wallNormal;
+        private bool _isTouchingWall;
+
 
         public PlayerStats Stats => _stats;
         public PlayerGripSensor Sensor => _sensor;
@@ -54,12 +57,45 @@ namespace StarterAssets
         public Vector2 MoveInput => _input.move;
         public bool JumpInput => _input.jump;
         public bool SprintInput => _input.sprint;
-        public bool LeftGripInput => _input.leftGrip;
-        public bool RightGripInput => _input.rightGrip;
+        // YENİ KİLİT DEĞİŞKENLERİ
+        private bool _leftGripLocked;
+        private bool _rightGripLocked;
+
+        // STATE'LERİN ÇAĞIRACAĞI KİLİT METODU (IPlayerController kontratını sağlar)
+        public void LockGrips()
+        {
+            _leftGripLocked = true;
+            _rightGripLocked = true;
+        }
+
+        // ESKİ BASİT SATIRLARIN YERİNE GELEN KİLİTLİ SİSTEM
+        public bool LeftGripInput
+        {
+            get
+            {
+                // Eğer oyuncu fareyi bırakırsa, kilidi aç (Artık tekrar tutunabilir)
+                if (!_input.leftGrip) _leftGripLocked = false;
+
+                // Girdi ancak tuşa basılıysa VE kilitli değilse geçerlidir
+                return _input.leftGrip && !_leftGripLocked;
+            }
+        }
+
+        public bool RightGripInput
+        {
+            get
+            {
+                // Eğer oyuncu fareyi bırakırsa, kilidi aç
+                if (!_input.rightGrip) _rightGripLocked = false;
+
+                return _input.rightGrip && !_rightGripLocked;
+            }
+        }
 
         public void SetLeftAnchor(Vector3? point, Vector3 normal) { LeftAnchor = point; LeftNormal = normal; }
         public void SetRightAnchor(Vector3? point, Vector3 normal) { RightAnchor = point; RightNormal = normal; }
-
+        private StaminaController _stamina;
+        public StaminaController Stamina => _stamina;
         private bool IsCurrentDeviceMouse
         {
             get
@@ -86,10 +122,13 @@ namespace StarterAssets
             _states = new PlayerStateFactory(this);
             _currentState = _states.Grounded;
             _currentState.EnterState();
+            _stamina = GetComponent<StaminaController>();
+            _stamina.Initialize(_stats.MaxStamina);
         }
 
         private void Update()
         {
+
             float vx = _velocity.x;
             float vz = _velocity.z;
             _horizontalSpeed = Mathf.Sqrt(vx * vx + vz * vz);
@@ -287,5 +326,18 @@ namespace StarterAssets
         }
 
         public void SetControllerEnabled(bool isEnabled) => _controller.enabled = isEnabled;
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (!_sensor.IsGrounded) // Sadece havadayken çalışır
+            {
+                // Eğer çarptığımız yüzeyin normali (baktığı yön) yataysa (Yani zemin veya tavan değil, dik bir duvarsa)
+                if (Mathf.Abs(hit.normal.y) < 0.2f)
+                {
+                    _wallNormal = hit.normal;
+                    _isTouchingWall = true;
+                }
+            }
+        }
     }
 }

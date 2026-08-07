@@ -23,17 +23,22 @@ public class PlayerAirState : PlayerBaseState
 
     public override void CheckSwitchStates()
     {
-        // YENİ AKTİF SENSÖR: Havada duvara uçarken (Diğer el boşta olduğu için null yolluyoruz)
-        if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
-        {
-            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
-                _ctx.SetLeftAnchor(point, normal);
-        }
+        // YENİ KİLİT: Güç tamamen bittiyse (veya sınırda 1'in altındaysa) tutunma kodlarını hiç okuma
+        bool hasStamina = _ctx.Stamina.CurrentStamina > 1f;
 
-        if (_ctx.RightGripInput && _ctx.RightAnchor == null)
+        if (hasStamina)
         {
-            if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
-                _ctx.SetRightAnchor(point, normal);
+            if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
+            {
+                if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                    _ctx.SetLeftAnchor(point, normal);
+            }
+
+            if (_ctx.RightGripInput && _ctx.RightAnchor == null)
+            {
+                if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                    _ctx.SetRightAnchor(point, normal);
+            }
         }
 
         if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Climb); return; }

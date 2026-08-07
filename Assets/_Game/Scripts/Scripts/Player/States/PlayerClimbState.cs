@@ -21,21 +21,44 @@ public class PlayerClimbState : PlayerBaseState
 
     public override void UpdateState()
     {
+        // 1. ZORUNLU DÜŞÜŞ KİLİDİ
+        if (_ctx.Stamina.CurrentStamina <= 0f)
+        {
+            _ctx.SetLeftAnchor(null, Vector3.zero);
+            _ctx.SetRightAnchor(null, Vector3.zero);
+            _ctx.SetVelocity(Vector3.down * 2f);
+
+            // İŞTE SİHİRLİ DOKUNUŞ BURASI: 
+            // Oyuncu fareden elini çekene kadar tutunma tuşlarını geçersiz kıl (Öldür)!
+            _ctx.LockGrips();
+            _ctx.ResetFreeLook();
+
+            _ctx.SwitchState(_factory.Air);
+            return;
+        }
+
+        // 2. VAULT KONTROLÜ
         if (_ctx.MoveInput.y > 0.1f && _ctx.CheckLedgeVault(out Vector3 targetPos))
         {
-            _ctx.VaultTargetPos = targetPos; // Hedefi FirstPersonController hafızasına yaz
+            _ctx.VaultTargetPos = targetPos;
             _ctx.SwitchState(_factory.Vault);
-            return; // State değiştiği için fonksiyonu burada kes
+            return;
         }
+
+        // 3. NORMAL İŞLEYİŞ
         HandleGripLogic();
         CheckSwitchStates();
         HandleTwoHandedPhysics();
+
+        // Staminayı erit
+        _ctx.Stamina.ConsumeStamina(_ctx.Stats.ClimbDrainRate * Time.deltaTime);
     }
 
     public override void ExitState() { }
 
     public override void CheckSwitchStates()
     {
+
         if (_ctx.LeftAnchor == null && _ctx.RightAnchor == null)
         {
             _ctx.ResetFreeLook();
@@ -51,8 +74,6 @@ public class PlayerClimbState : PlayerBaseState
             _ctx.SwitchState(_factory.Grounded);
             return;
         }
-
-
 
         else if (_ctx.JumpInput)
         {

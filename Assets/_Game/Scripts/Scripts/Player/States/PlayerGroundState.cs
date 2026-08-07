@@ -3,6 +3,7 @@ using UnityEngine;
 public class PlayerGroundedState : PlayerBaseState
 {
     private float _jumpTimeoutDelta;
+    private bool _isExhausted;
 
     public PlayerGroundedState(IPlayerController currentContext, PlayerStateFactory playerStateFactory) : base(currentContext, playerStateFactory) { }
 
@@ -13,13 +14,32 @@ public class PlayerGroundedState : PlayerBaseState
         vel.y = _ctx.Stats.GroundStickVelocity;
         _ctx.SetVelocity(vel);
         _jumpTimeoutDelta = _ctx.Stats.JumpTimeout;
+        _isExhausted = false;
     }
 
     public override void UpdateState()
     {
         if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
+
+        // 1. KİLİT AÇMA: Eğer oyuncu Shift tuşunu bırakırsa yorgunluk kilidini kaldır
+        if (!_ctx.SprintInput) _isExhausted = false;
+
+        // 2. KİLİTLEME: Eğer stamina tamamen bittiyse yorgunluk kilidini devreye sok
+        if (_ctx.Stamina.CurrentStamina <= 0.1f) _isExhausted = true;
+
         HandleMovement();
         CheckSwitchStates();
+
+        // 3. HARCAMA ŞARTI: Hareket var + Shift'e basılı + YORGUN DEĞİL
+        if (_ctx.MoveInput != Vector2.zero && _ctx.SprintInput && !_isExhausted)
+        {
+            float sprintDrainRate = _ctx.Stats.ClimbDrainRate * 0.5f;
+            _ctx.Stamina.ConsumeStamina(sprintDrainRate * Time.deltaTime);
+        }
+        else
+        {
+            _ctx.Stamina.RegenerateStamina(_ctx.Stats.StaminaRegenRate * Time.deltaTime);
+        }
     }
 
     public override void ExitState() => _ctx.ResetJump();
@@ -58,7 +78,11 @@ public class PlayerGroundedState : PlayerBaseState
     private void HandleMovement()
     {
         PlayerStats stats = _ctx.Stats;
-        float targetSpeed = _ctx.SprintInput ? stats.SprintSpeed : stats.MoveSpeed;
+
+        // HIZ BELİRLEME: Koşabilmesi için yorgunluk kilidinin kapalı olması zorunlu
+        bool canSprint = _ctx.SprintInput && !_isExhausted;
+        float targetSpeed = canSprint ? stats.SprintSpeed : stats.MoveSpeed;
+
         if (_ctx.MoveInput == Vector2.zero) targetSpeed = 0.0f;
 
         float currentHorizontalSpeed = _ctx.HorizontalSpeed;

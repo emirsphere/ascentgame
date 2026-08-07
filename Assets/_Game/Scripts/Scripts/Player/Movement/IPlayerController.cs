@@ -40,4 +40,6 @@ public interface IPlayerController
     // Tırmanılan kayanın üstünün düz olup olmadığını kontrol eden sensör
     bool CheckLedgeVault(out Vector3 vaultTarget);
     public Vector3 VaultTargetPos { get; set; }
+    StaminaController Stamina { get; }
+    void LockGrips();
 }
