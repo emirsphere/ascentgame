@@ -1,0 +1,13 @@
+Library/
+Temp/
+Obj/
+Logs/
+MemoryCaptures/
+Build/
+Builds/
+UserSettings/
+*.meta
+*.unity
+*.prefab
+*.asset
+*.mat

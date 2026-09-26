@@ -1,0 +1,20 @@
+﻿<Solution>
+  <Project Path="FishNet.Runtime.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="FishNet.Codegen.Cecil.csproj" />
+  <Project Path="Boxophobic.Utils.Editor.csproj" />
+  <Project Path="SynapseSocket.csproj" />
+  <Project Path="GameKit.Dependencies.csproj" />
+  <Project Path="FishNet.Demos.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="UnityChan.Common.csproj" />
+  <Project Path="Boxophobic.SkyboxCubemapExtended.Editor.csproj" />
+  <Project Path="Unity.FishNet.Codegen.csproj" />
+  <Project Path="BakeryEditorAssembly.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="Boxophobic.Utils.Scripts.csproj" />
+  <Project Path="BakeryRuntimeAssembly.csproj" />
+  <Project Path="BakeryAPV.csproj" />
+  <Project Path="UnityChan.Editor.csproj" />
+  <Project Path="BakeryECS.csproj" />
+</Solution>

@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e48a236f08d7e341b11a26d7ffab935, type: 3}
   m_Name: StandartStats
   m_EditorClassIdentifier: 
-  MoveSpeed: 10
-  SprintSpeed: 20
-  RotationSpeed: 10
-  AccelerationRate: 7
+  MoveSpeed: 9
+  SprintSpeed: 13
+  RotationSpeed: 7
+  AccelerationRate: 25
   DecelerationRate: 25
   SpeedBlendThreshold: 0.1
+  AntiSlipGravityMultiplier: 1
+  GroundStickForce: 10
   JumpHeight: 2
   Gravity: -15
   AirControlRate: 2
@@ -32,29 +34,35 @@ MonoBehaviour:
   GroundStickVelocity: -2
   AirGraceDuration: 0.15
   AirGraceUpwardVelocity: 0.1
-  GripReachDistance: 3.6
+  ShoulderHeight: 2.6
+  GripReachDistance: 1.5
   GripBufferTime: 0.15
   ClimbableLayers:
     serializedVersion: 2
     m_Bits: 128
-  RestOffset: 2.8
-  PullOffset: 0.8
-  BaseWallDistance: 1.2
-  LeanWallDistance: 3.6
+  RestOffset: 3.8
+  PullOffset: 1.4
+  BaseWallDistance: 0.302
+  LeanWallDistance: 0.8
   PullWallDistanceMultiplier: 0.8
-  SwingAmplitude: 1.5
+  SwingAmplitude: 1.2
   MuscleSpeed: 6
-  SpringStiffness: 150
+  SpringStiffness: 260
   ClimbInputThreshold: 0.1
   ClimbSnapThreshold: 0.05
+  GripCooldown: 0.4
+  MaxArmSpan: 2.7
   ClimbJumpNormalScale: 1.5
   ClimbJumpUpScale: 1.5
   ClimbJumpVelocityRetain: 0.3
-  ClimbJumpImpulse: 8
+  ClimbJumpImpulse: 12
   EnableCameraTilt: 1
   TiltAngle: 0.5
-  TiltSpeed: 2
+  TiltSpeed: 1
   EnableHeadBob: 1
-  BobFrequency: 2
+  BobFrequency: 1
   BobAmplitude: 0.05
-  MaxArmSpan: 4
+  MaxStamina: 900
+  ClimbDrainRate: 15
+  JumpStaminaCost: 25
+  StaminaRegenRate: 35

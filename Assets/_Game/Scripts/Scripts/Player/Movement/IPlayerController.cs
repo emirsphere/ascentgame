@@ -17,29 +17,43 @@ public interface IPlayerController
     Vector3? RightAnchor { get; }
     Vector3 LeftNormal { get; }
     Vector3 RightNormal { get; }
-
+    bool IsClimbing { get; set; }
+    void ApplyClimbForce(Vector3 force);
     void SetLeftAnchor(Vector3? point, Vector3 normal);
     void SetRightAnchor(Vector3? point, Vector3 normal);
 
-    // Asılıyken kafayı vücuttan bağımsız çevirmek için
     bool IsFreeLook { get; set; }
     void ResetFreeLook();
-
+    void ExecuteJump(float jumpVelocity);
     void SetVelocity(Vector3 velocity);
     void SwitchState(PlayerBaseState newState);
     void ResetJump();
-    void SetControllerEnabled(bool isEnabled);
 
+    void SetKinematic(bool isKinematic);
+    void LogEvent(string category, string message, bool isError = false);
+    float TargetYaw { get; set; }
+    void SmoothAlignBody(Vector3 targetNormal, float speed);
+    public void LockLeftGrip();
+    public void LockRightGrip();
     Vector2 MoveInput { get; }
     bool JumpInput { get; }
     bool SprintInput { get; }
     bool LeftGripInput { get; }
     bool RightGripInput { get; }
-    // Yeni aktif tutunma sensörü
+
+    bool IsTensioning { get; }
+    float TensionCharge { get; }
+    void BuildTension();
+    void ExecuteDynoJump();
+    void ResetTension();
     bool TryGetGripPoint(Vector3? oppositeHandAnchor, out Vector3 hitPoint, out Vector3 hitNormal);
-    // Tırmanılan kayanın üstünün düz olup olmadığını kontrol eden sensör
     bool CheckLedgeVault(out Vector3 vaultTarget);
     public Vector3 VaultTargetPos { get; set; }
     StaminaController Stamina { get; }
     void LockGrips();
+    bool JumpHeld { get; }
+
+    // --- YENİ EKLENEN JUMP BUFFER DEĞİŞKENLERİ ---
+    float JumpBufferTimer { get; set; }
+    void ConsumeJumpBuffer();
 }

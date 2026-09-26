@@ -7,6 +7,7 @@ public class PlayerStateFactory
     public PlayerBaseState Hang { get; private set; } // YENİ: Tek El Sarkma
     public PlayerBaseState Climb { get; private set; } // YENİ: İki El Tırmanma
     public PlayerBaseState Vault { get; private set; }
+    public PlayerBaseState Slide { get; private set; }
 
     public PlayerStateFactory(IPlayerController currentContext)
     {
@@ -16,5 +17,6 @@ public class PlayerStateFactory
         Hang = new PlayerHangState(_context, this);
         Climb = new PlayerClimbState(_context, this);
         Vault = new PlayerVaultState(_context, this);
+        Slide = new PlayerSlideState(_context, this);
     }
 }

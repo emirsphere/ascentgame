@@ -361,3 +361,58 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+*.fbx
+*.meta
+*.meta
+*.meta
+/Library
+/Assets/Samples
+/Assets/Bakery
+/Assets/_Game/Indirilen Assetler
+/Assets/BOXOPHOBIC
+/Assets/PostProcessing
+*.json
+*.csproj
+/Assets/Cinema Suite
+/Assets/RealBlend
+/Assets/Editor
+/Assets/UniStorm Weather System
+/Assets/Emmanuel
+/Assets/TextMesh Pro
+/Assets/Plugins
+/Assets/HIVEMIND
+/Assets/Polytope Studio
+/Assets/Kevin Iglesias
+/Assets/IgniteCoders
+*.inputactions
+/Assets/TutorialInfo
+*.anim
+*.controller
+/Assets/_Game/Animations
+/Assets/_Game/Prefabs
+/Assets/_Game/Scenes
+/Assets/ADG_Textures
+/Assets/ALP_Assets
+/Assets/BakeryLightmaps
+/Assets/Frank Platformer 2
+/Assets/LeartesStudios
+/Assets/MeshPainter
+/Assets/MeshPainter
+/Assets/Flooded_Grounds
+/Assets/Editor Default Resources
+/Assets/EasyRoads3D
+/Assets/SkySeries Freebie
+/Assets/Viewport
+/ProjectSettings
+/UserSettings
+/Assets/SpaceZeta_Spotlight
+/Assets/Settings
+/Assets/Sat Productions
+/Assets/PBS Materials Variety Pack
+/Assets/Polybrush Data
+/Assets/Resources
+/Assets/Scenes
+*.meta
+*.asset
+*.mat
+*.renderTexture

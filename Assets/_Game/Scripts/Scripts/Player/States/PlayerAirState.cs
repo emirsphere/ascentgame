@@ -6,15 +6,14 @@ public class PlayerAirState : PlayerBaseState
 
     public override void EnterState()
     {
-        _ctx.SetControllerEnabled(true); // EKSİKTİ, EKLENDİ! (Düşerken zeminden geçmemek için)
+        _ctx.SetKinematic(false);
         _ctx.ResetJump();
     }
-
 
     public override void UpdateState()
     {
         if (_ctx.JumpInput) _ctx.ResetJump();
-        HandleGravity();
+
         HandleAirMovement();
         CheckSwitchStates();
     }
@@ -23,69 +22,78 @@ public class PlayerAirState : PlayerBaseState
 
     public override void CheckSwitchStates()
     {
-        // YENİ KİLİT: Güç tamamen bittiyse (veya sınırda 1'in altındaysa) tutunma kodlarını hiç okuma
         bool hasStamina = _ctx.Stamina.CurrentStamina > 1f;
 
+        // 1. ÖNCE GRIP VE KİLİT MANTIĞI (Sadece stamina varsa tutunabilir)
         if (hasStamina)
         {
             if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
             {
-                if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                // Havada tek el kuralı için ilk parametre _ctx.RightAnchor olmalı
+                if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
+                {
                     _ctx.SetLeftAnchor(point, normal);
+                }
+                else
+                {
+                    // MÜHENDİSLİK HAMLESİ: Havada boşluğa basıldıysa anında kilitle
+                    _ctx.LockLeftGrip();
+                }
             }
 
             if (_ctx.RightGripInput && _ctx.RightAnchor == null)
             {
-                if (_ctx.TryGetGripPoint(null, out Vector3 point, out Vector3 normal))
+                if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
+                {
                     _ctx.SetRightAnchor(point, normal);
+                }
+                else
+                {
+                    _ctx.LockRightGrip();
+                }
             }
         }
 
-        if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Climb); return; }
-        else if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null) { _ctx.SwitchState(_factory.Hang); return; }
-
-        if (_ctx.Sensor.IsGrounded && _ctx.Velocity.y < 0.0f) _ctx.SwitchState(_factory.Grounded);
-    }
-
-    private void HandleGravity()
-    {
-        PlayerStats stats = _ctx.Stats;
-        Vector3 vel = _ctx.Velocity;
-
-        // EĞER DUVARDAN KAYIYORSA (SLIDING):
-        // Duvara takılıp süzülmesini engellemek için dikey düşüş hızını ekstra artırıyoruz
-        if (_ctx.Sensor.IsSliding)
+        // 2. SONRA STATE DEĞİŞİMİ
+        if (_ctx.LeftAnchor != null && _ctx.RightAnchor != null)
         {
-            // Duvar sürtünmesini kırmak için ekstra dikey ivme
-            vel.y += stats.Gravity * 2.0f * Time.deltaTime;
+            _ctx.SwitchState(_factory.Climb);
+            return;
         }
-        else if (vel.y > -stats.TerminalVelocity)
+        else if (_ctx.LeftAnchor != null || _ctx.RightAnchor != null)
         {
-            vel.y += stats.Gravity * Time.deltaTime;
+            _ctx.SwitchState(_factory.Hang);
+            return;
         }
 
-        _ctx.SetVelocity(vel);
+        // 3. YERE ÇARPMA KONTROLÜ
+        if (_ctx.Velocity.y <= 0.1f)
+        {
+            if (_ctx.Sensor.CurrentGroundState == Ascent.Player.Sensors.GroundState.Grounded)
+            {
+                _ctx.SwitchState(_factory.Grounded);
+                return;
+            }
+            else if (_ctx.Sensor.CurrentGroundState == Ascent.Player.Sensors.GroundState.Sliding)
+            {
+                _ctx.SwitchState(_factory.Slide);
+                return;
+            }
+        }
     }
 
     private void HandleAirMovement()
     {
         PlayerStats stats = _ctx.Stats;
         float targetSpeed = _ctx.MoveInput == Vector2.zero ? 0.0f : stats.MoveSpeed;
-        float finalSpeed = Mathf.Lerp(_ctx.HorizontalSpeed, targetSpeed, Time.deltaTime * stats.AirControlRate);
-
-        Vector3 vel = _ctx.Velocity;
-        if (_ctx.MoveInput == Vector2.zero)
-        {
-            float drag = Time.deltaTime * stats.AirDragRate;
-            vel.x = Mathf.Lerp(vel.x, 0f, drag);
-            vel.z = Mathf.Lerp(vel.z, 0f, drag);
-            _ctx.SetVelocity(vel);
-            return;
-        }
 
         Vector3 inputDir = (_ctx.PlayerTransform.right * _ctx.MoveInput.x + _ctx.PlayerTransform.forward * _ctx.MoveInput.y).normalized;
-        vel.x = inputDir.x * finalSpeed;
-        vel.z = inputDir.z * finalSpeed;
-        _ctx.SetVelocity(vel);
+
+        // Havadaki nihai hedef vektörü veriyoruz[cite: 3]
+        Vector3 targetVelocity = inputDir * targetSpeed;
+
+        _ctx.SetVelocity(targetVelocity);
+
+
     }
 }
