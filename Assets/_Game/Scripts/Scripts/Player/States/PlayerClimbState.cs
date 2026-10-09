@@ -47,12 +47,6 @@ public class PlayerClimbState : PlayerBaseState
             return;
         }
 
-        if (_ctx.MoveInput.sqrMagnitude < 0.01f && _shiftPhase == 0)
-        {
-            Vector3 dampedVelocity = Vector3.Lerp(_ctx.Velocity, Vector3.zero, Time.deltaTime * 15f);
-            _ctx.SetVelocity(dampedVelocity);
-        }
-
         if (_ctx.JumpHeld) _ctx.BuildTension();
         else if (_ctx.IsTensioning && !_ctx.JumpHeld)
         {
