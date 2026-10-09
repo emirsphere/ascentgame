@@ -106,7 +106,7 @@ public class PlayerHangState : PlayerBaseState
         if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null) _ctx.SetLeftAnchor(null, Vector3.zero);
         if (!_ctx.RightGripInput && _ctx.RightAnchor != null) _ctx.SetRightAnchor(null, Vector3.zero);
 
-        float maxReach = Mathf.Min(_ctx.Stats.GripReachDistance, 1.4f);
+        float maxReach = _ctx.Stats.GripReachDistance;
         Vector3 shoulderPos = _ctx.PlayerTransform.position + Vector3.up * _ctx.Stats.ShoulderHeight;
 
         if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
@@ -114,7 +114,7 @@ public class PlayerHangState : PlayerBaseState
             if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
             {
                 Vector3 finalTarget = point + (-_ctx.PlayerTransform.right * 0.12f);
-                if (Vector3.Distance(shoulderPos, finalTarget) <= maxReach) _ctx.SetLeftAnchor(finalTarget, normal);
+                if (Vector3.Distance(shoulderPos, point) <= maxReach) _ctx.SetLeftAnchor(point, normal);
                 else _ctx.LockLeftGrip();
             }
             else _ctx.LockLeftGrip();
@@ -125,7 +125,7 @@ public class PlayerHangState : PlayerBaseState
             if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
             {
                 Vector3 finalTarget = point + (_ctx.PlayerTransform.right * 0.12f);
-                if (Vector3.Distance(shoulderPos, finalTarget) <= maxReach) _ctx.SetRightAnchor(finalTarget, normal);
+                if (Vector3.Distance(shoulderPos, point) <= maxReach) _ctx.SetRightAnchor(point, normal);
                 else _ctx.LockRightGrip();
             }
             else _ctx.LockRightGrip();
@@ -188,22 +188,25 @@ public class PlayerHangState : PlayerBaseState
             }
         }
 
-        // --- 3. FİZİKSEL SARKAÇ (EL YER DEĞİŞTİRİRKEN GÖVDEYİ OTOMATİK ÇEKER) ---
-        float desiredShoulderY = anchor.y - 0.3f;
-        float targetY = desiredShoulderY - _ctx.Stats.ShoulderHeight;
-        float currentWallDistance = Mathf.Lerp(_ctx.Stats.BaseWallDistance, _ctx.Stats.LeanWallDistance, _ctx.TensionCharge);
-        Vector3 depthOrigin = new Vector3(anchor.x, targetY, anchor.z);
-        Vector3 rawDesiredPosition = depthOrigin;
+        Vector3 wallDown = Vector3.ProjectOnPlane(Vector3.down, handNormal).normalized;
+        if (wallDown == Vector3.zero) wallDown = Vector3.down;
 
-        if (Physics.Raycast(depthOrigin + (handNormal * 1.5f), -handNormal, out RaycastHit hitDepth, currentWallDistance * 3f, _ctx.Stats.ClimbableLayers))
-            rawDesiredPosition = hitDepth.point + (hitDepth.normal * currentWallDistance);
-        else
-            rawDesiredPosition = depthOrigin + (handNormal * currentWallDistance);
+        // 2. Omuzları kayanın eğimi (wallDown) boyunca kaydır
+        // 2. Omuzları kayanın eğimi (wallDown) boyunca kaydır. 
+        // 0.3f olan yapay kaydırmayı 0.65f yapıyoruz ki kollar esneyebilsin, karakter asansör gibi yukarı çekilmesin.
+        Vector3 chestPivot = anchor + (wallDown * (_ctx.Stats.ShoulderHeight + 0.65f));
+
+        // 3. Gövdeyi yüzey normali yönünde (dışarıya) mesafelendir
+        float currentWallDistance = Mathf.Lerp(_ctx.Stats.BaseWallDistance, _ctx.Stats.LeanWallDistance, _ctx.TensionCharge);
+        Vector3 rawDesiredPosition = chestPivot + (handNormal * currentWallDistance);
+        // ------------------------------------------------
 
         if (_smoothedDesiredPosition == Vector3.zero) _smoothedDesiredPosition = rawDesiredPosition;
-        _smoothedDesiredPosition = Vector3.Lerp(_smoothedDesiredPosition, rawDesiredPosition, Time.deltaTime * 12f);
 
-        float deltaY = Mathf.Clamp(currentPos.y - targetY, -0.6f, 0.6f);
+        // 12f olan hızı 20f yapıyoruz. Böylece hantal kayma hissi gidip, daha dinamik ve hızlı bir kasılma (tokluk) hissi gelecek.
+        _smoothedDesiredPosition = Vector3.Lerp(_smoothedDesiredPosition, rawDesiredPosition, Time.deltaTime * 20f);
+
+        float deltaY = Mathf.Clamp(currentPos.y - rawDesiredPosition.y, -0.6f, 0.6f);
         Vector3 wallDisplacement = Vector3.Project(currentPos - _smoothedDesiredPosition, handNormal);
 
         // --- TASMA (LEASH) ---

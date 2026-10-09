@@ -106,17 +106,17 @@ namespace Ascent.Player.Sensors
         {
             if (CameraTransform == null || Stats == null) return;
 
-            bool hitWall = Physics.SphereCast(CameraTransform.position, 0.15f, CameraTransform.forward, out RaycastHit hit, Stats.GripReachDistance, Stats.ClimbableLayers);
+            bool hitWall = Physics.SphereCast(CameraTransform.position, 0.25f, CameraTransform.forward, out RaycastHit hit, Stats.GripReachDistance, Stats.ClimbableLayers);
 
             if (hitWall)
             {
-                // FİZİKSEL UZANMA SINIRI: Karakterin ayak tabanından max 4.2 metre yukarısını tutabilir.
-                float maxPhysicalReach = transform.position.y + 4.2f;
+                Vector3 shoulderPos = transform.position + (Vector3.up * Stats.ShoulderHeight);
+                float realDistanceToShoulder = Vector3.Distance(shoulderPos, hit.point);
 
                 float wallAngle = Vector3.Angle(Vector3.up, hit.normal);
 
-                // Şarta 'hit.point.y <= maxPhysicalReach' eklendi.
-                if (wallAngle >= 25f && wallAngle <= 155f && hit.point.y <= maxPhysicalReach)
+                // UI'ın yeşil yanma şartına da +0.2f esneme payı verdik, TryGetGripPoint ile aynı dili konuşuyor
+                if (wallAngle >= 25f && wallAngle <= 155f && realDistanceToShoulder <= Stats.GripReachDistance + 0.2f)
                 {
                     CanGrip = true;
                     GripHit = hit;
@@ -126,13 +126,9 @@ namespace Ascent.Player.Sensors
             }
 
             if (_gripBufferTimer > 0)
-            {
                 _gripBufferTimer -= Time.fixedDeltaTime;
-            }
             else
-            {
                 CanGrip = false;
-            }
         }
 
         // FAZ 18: Scene ekranında sensörleri görselleştirme

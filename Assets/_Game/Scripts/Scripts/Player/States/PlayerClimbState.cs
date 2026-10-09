@@ -108,7 +108,7 @@ public class PlayerClimbState : PlayerBaseState
         if (!_ctx.LeftGripInput && _ctx.LeftAnchor != null) _ctx.SetLeftAnchor(null, Vector3.zero);
         if (!_ctx.RightGripInput && _ctx.RightAnchor != null) _ctx.SetRightAnchor(null, Vector3.zero);
 
-        float maxClimbReach = Mathf.Min(_ctx.Stats.GripReachDistance, 1.4f);
+        float maxClimbReach = _ctx.Stats.GripReachDistance;
         Vector3 shoulderPos = _ctx.PlayerTransform.position + (Vector3.up * _ctx.Stats.ShoulderHeight);
 
         if (_ctx.LeftGripInput && _ctx.LeftAnchor == null)
@@ -116,7 +116,7 @@ public class PlayerClimbState : PlayerBaseState
             if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
             {
                 Vector3 finalTargetPoint = point + (-_ctx.PlayerTransform.right * 0.12f);
-                if (Vector3.Distance(shoulderPos, finalTargetPoint) <= maxClimbReach) _ctx.SetLeftAnchor(finalTargetPoint, normal);
+                if (Vector3.Distance(shoulderPos, point) <= maxClimbReach) _ctx.SetLeftAnchor(point, normal);
                 else _ctx.LockLeftGrip();
             }
             else _ctx.LockLeftGrip();
@@ -127,7 +127,7 @@ public class PlayerClimbState : PlayerBaseState
             if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
             {
                 Vector3 finalTargetPoint = point + (_ctx.PlayerTransform.right * 0.12f);
-                if (Vector3.Distance(shoulderPos, finalTargetPoint) <= maxClimbReach) _ctx.SetRightAnchor(finalTargetPoint, normal);
+                if (Vector3.Distance(shoulderPos, point) <= maxClimbReach) _ctx.SetRightAnchor(point, normal);
                 else _ctx.LockRightGrip();
             }
             else _ctx.LockRightGrip();
@@ -235,22 +235,23 @@ public class PlayerClimbState : PlayerBaseState
         Vector3 averageNormal = (_ctx.LeftNormal + _ctx.RightNormal).normalized;
         if (averageNormal == Vector3.zero) averageNormal = Vector3.up;
 
-        float desiredShoulderY = averagePivot.y - 0.3f;
-        float targetY = desiredShoulderY - stats.ShoulderHeight;
+        // --- YENİ: YÜZEYE YAPIŞMA (SURFACE HUGGING) MATEMATİĞİ ---
+        // 1. Kayanın yüzeyi boyunca aşağı yönü bul (Yerçekiminin yüzeydeki izdüşümü)
+        Vector3 wallDown = Vector3.ProjectOnPlane(Vector3.down, averageNormal).normalized;
+        if (wallDown == Vector3.zero) wallDown = Vector3.down; // Tam düz tavanda güvenlik
+
+        // 2. Omuzları Y ekseninde dümdüz indirmek yerine, kayanın eğimi (wallDown) boyunca kaydır
+        // 0.3f'i 0.65f yaptık (Kollar daha çok esneyecek, asansör gibi yukarı çekmeyecek)
+        Vector3 chestPivot = averagePivot + (wallDown * (stats.ShoulderHeight + 0.65f));
 
         float currentWallDistance = Mathf.Lerp(stats.BaseWallDistance, stats.LeanWallDistance, _ctx.TensionCharge);
-        Vector3 depthOrigin = new Vector3(averagePivot.x, targetY, averagePivot.z);
-        Vector3 rawDesiredPosition = depthOrigin;
-
-        if (Physics.Raycast(depthOrigin + (averageNormal * 1.5f), -averageNormal, out RaycastHit hit, currentWallDistance * 3f, _ctx.Stats.ClimbableLayers))
-            rawDesiredPosition = hit.point + (hit.normal * currentWallDistance);
-        else
-            rawDesiredPosition = depthOrigin + (averageNormal * currentWallDistance);
+        Vector3 rawDesiredPosition = chestPivot + (averageNormal * currentWallDistance);
 
         if (_smoothedDesiredPosition == Vector3.zero) _smoothedDesiredPosition = rawDesiredPosition;
-        _smoothedDesiredPosition = Vector3.Lerp(_smoothedDesiredPosition, rawDesiredPosition, Time.deltaTime * 12f);
+        // 12f olan hızı 20f yaptık (Vücut asansör gibi kaymak yerine hızlıca kasılacak)
+        _smoothedDesiredPosition = Vector3.Lerp(_smoothedDesiredPosition, rawDesiredPosition, Time.deltaTime * 20f);
 
-        float deltaY = Mathf.Clamp(currentPos.y - targetY, -0.6f, 0.6f);
+        float deltaY = Mathf.Clamp(currentPos.y - rawDesiredPosition.y, -0.6f, 0.6f);
         Vector3 wallDisplacement = Vector3.Project(currentPos - _smoothedDesiredPosition, averageNormal);
         Vector3 springForce = -stats.SpringStiffness * wallDisplacement;
 

@@ -625,19 +625,23 @@ namespace StarterAssets
 
             Ray ray = new Ray(_mainCamera.transform.position, _mainCamera.transform.forward);
 
-            if (!Physics.SphereCast(ray, 0.06f, out RaycastHit hit, _stats.GripReachDistance, _stats.ClimbableLayers))
+            // 0.3f olan kalınlığı 0.08f yaptık
+            if (!Physics.SphereCast(ray, 0.08f, out RaycastHit hit, _stats.GripReachDistance + 0.3f, _stats.ClimbableLayers))
             {
                 return false;
             }
 
             float wallAngle = Vector3.Angle(Vector3.up, hit.normal);
             if (wallAngle < 25f || wallAngle > 160f) return false;
-            if (Vector3.Dot(ray.direction, hit.normal) > 0.1f) return false;
 
+            if (Vector3.Dot(ray.direction, hit.normal) > 0.2f) return false;
+
+            // YENİ: Gerçek Omuz Mesafesi Kontrolü Geri Döndü!
+            // Kavisli kayalar için GripReachDistance'a ufak bir esneme payı (+0.2f) veriyoruz.
             Vector3 shoulderPos = transform.position + (Vector3.up * _stats.ShoulderHeight);
             float distToShoulder = Vector3.Distance(shoulderPos, hit.point);
-            float maxReach = Mathf.Min(_stats.GripReachDistance, 1.3f);
-            if (distToShoulder > maxReach) return false;
+
+            if (distToShoulder > _stats.GripReachDistance + 0.2f) return false; // Çok yüksekse tıklamayı KESİN reddet
 
             if (oppositeHandAnchor.HasValue)
             {
