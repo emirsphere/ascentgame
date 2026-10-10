@@ -167,11 +167,11 @@ namespace StarterAssets
             }
         }
 
-        public void SetLeftAnchor(Vector3? point, Vector3 normal)
+        public void SetLeftAnchor(Vector3? point, Vector3 normal, Vector3? visualTarget = null)
         {
             LeftAnchor = point;
             LeftNormal = normal;
-            if (LeftHandIK != null) LeftHandIK.SetGrip(point, normal);
+            if (LeftHandIK != null) LeftHandIK.SetGrip(point, normal, visualTarget);
 
             if (base.IsOwner)
             {
@@ -191,11 +191,11 @@ namespace StarterAssets
             _netLeftAnchor.Value = data;
         }
 
-        public void SetRightAnchor(Vector3? point, Vector3 normal)
+        public void SetRightAnchor(Vector3? point, Vector3 normal, Vector3? visualTarget = null)
         {
             RightAnchor = point;
             RightNormal = normal;
-            if (RightHandIK != null) RightHandIK.SetGrip(point, normal);
+            if (RightHandIK != null) RightHandIK.SetGrip(point, normal, visualTarget);
 
             if (base.IsOwner)
             {

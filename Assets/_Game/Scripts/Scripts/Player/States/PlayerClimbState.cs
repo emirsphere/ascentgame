@@ -116,7 +116,7 @@ public class PlayerClimbState : PlayerBaseState
             if (_ctx.TryGetGripPoint(_ctx.RightAnchor, out Vector3 point, out Vector3 normal))
             {
                 Vector3 finalTargetPoint = point + (-_ctx.PlayerTransform.right * 0.12f);
-                if (Vector3.Distance(shoulderPos, finalTargetPoint) <= maxClimbReach) _ctx.SetLeftAnchor(finalTargetPoint, normal);
+                if (Vector3.Distance(shoulderPos, finalTargetPoint) <= maxClimbReach) _ctx.SetLeftAnchor(finalTargetPoint, normal, point);
                 else _ctx.LockLeftGrip();
             }
             else _ctx.LockLeftGrip();
@@ -127,7 +127,7 @@ public class PlayerClimbState : PlayerBaseState
             if (_ctx.TryGetGripPoint(_ctx.LeftAnchor, out Vector3 point, out Vector3 normal))
             {
                 Vector3 finalTargetPoint = point + (_ctx.PlayerTransform.right * 0.12f);
-                if (Vector3.Distance(shoulderPos, finalTargetPoint) <= maxClimbReach) _ctx.SetRightAnchor(finalTargetPoint, normal);
+                if (Vector3.Distance(shoulderPos, finalTargetPoint) <= maxClimbReach) _ctx.SetRightAnchor(finalTargetPoint, normal, point);
                 else _ctx.LockRightGrip();
             }
             else _ctx.LockRightGrip();

@@ -19,8 +19,8 @@ public interface IPlayerController
     Vector3 RightNormal { get; }
     bool IsClimbing { get; set; }
     void ApplyClimbForce(Vector3 force);
-    void SetLeftAnchor(Vector3? point, Vector3 normal);
-    void SetRightAnchor(Vector3? point, Vector3 normal);
+    void SetLeftAnchor(Vector3? point, Vector3 normal, Vector3? visualTarget = null);
+    void SetRightAnchor(Vector3? point, Vector3 normal, Vector3? visualTarget = null);
 
     bool IsFreeLook { get; set; }
     void ResetFreeLook();

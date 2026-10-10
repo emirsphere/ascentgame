@@ -23,11 +23,13 @@ public class ClimbingHandIK : MonoBehaviour
     public Vector3 ElbowOffset = new Vector3(0.5f, -0.2f, 0.4f);
 
     private Vector3? _currentAnchor = null;
+    private Vector3? _visualTarget = null;
     private Vector3 _wallNormal = Vector3.forward;
 
-    public void SetGrip(Vector3? point, Vector3 normal)
+    public void SetGrip(Vector3? point, Vector3 normal, Vector3? visualTarget = null)
     {
         _currentAnchor = point;
+        _visualTarget = point.HasValue ? visualTarget ?? point : null;
         _wallNormal = normal;
     }
 
@@ -46,7 +48,7 @@ public class ClimbingHandIK : MonoBehaviour
         if (_currentAnchor.HasValue && !isTargetTooFar)
         {
             IKConstraint.weight = Mathf.Lerp(IKConstraint.weight, 1f, Time.deltaTime * WeightLerpSpeed);
-            Target.position = _currentAnchor.Value - (_wallNormal * SurfaceDepthOffset);
+            Target.position = _visualTarget.Value - (_wallNormal * SurfaceDepthOffset);
 
             Quaternion wallAlignment = Quaternion.LookRotation(-_wallNormal, Vector3.up);
             Vector3 finalRotationOffset = RotationOffset;
